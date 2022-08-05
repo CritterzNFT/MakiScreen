@@ -4,7 +4,6 @@ import java.net.http.WebSocket.Listener;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
-
 import org.bukkit.Bukkit;
 import org.bukkit.craftbukkit.v1_18_R1.entity.CraftPlayer;
 import org.bukkit.entity.Player;

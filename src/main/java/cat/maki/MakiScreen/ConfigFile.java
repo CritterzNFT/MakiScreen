@@ -12,6 +12,7 @@ public class ConfigFile extends BukkitRunnable {
     private static int mapWidth;
     private static int VCWidth;
     private static int VCHeight;
+    private static int StreamPort;
     private FileConfiguration config;
     public Plugin plugin;
 
@@ -75,6 +76,8 @@ public class ConfigFile extends BukkitRunnable {
     public static int getVCHeight() {
         return VCHeight;
     }
+
+    public static int getStreamPort() {return StreamPort; }
 
 
 }

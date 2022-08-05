@@ -2,4 +2,5 @@
 # 1 = 256x128 = 2 maps
 # 2 = 512x256 = 8 maps
 # 3 = 1024x512 = 32 maps
-size: 2
+size: 3
+stream_port: 1337

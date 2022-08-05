@@ -7,10 +7,15 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.util.logging.Logger;
+
+import static org.bukkit.Bukkit.getLogger;
 
 // https://stackoverflow.com/questions/21420252/how-to-receive-mpeg-ts-stream-over-udp-from-ffmpeg-in-java
 class VideoCaptureUDPServer extends Thread {
     public boolean running = true;
+
+    private final Logger logger = getLogger();
 
     private DatagramSocket socket;
 
@@ -19,7 +24,8 @@ class VideoCaptureUDPServer extends Thread {
     public void run() {
         try {
             byte[] buffer = new byte[1024*1024]; // 1 mb
-            socket = new DatagramSocket(1337);
+            logger.info("Listening to stream on port " + ConfigFile.getStreamPort());
+            socket = new DatagramSocket(ConfigFile.getStreamPort());
             DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
 
             ByteArrayOutputStream output = new ByteArrayOutputStream();
