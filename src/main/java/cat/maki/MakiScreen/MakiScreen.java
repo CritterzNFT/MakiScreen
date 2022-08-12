@@ -1,6 +1,5 @@
 package cat.maki.MakiScreen;
 
-import com.comphenix.protocol.ProtocolLibrary;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -62,7 +61,7 @@ public final class MakiScreen extends JavaPlugin implements Listener {
         FrameProcessorTask frameProcessorTask = new FrameProcessorTask(mapSize, mapWidth);
         frameProcessorTask.runTaskTimerAsynchronously(this, 0, 1);
         FramePacketSender framePacketSender =
-            new FramePacketSender(this, frameProcessorTask.getFrameBuffers(), ProtocolLibrary.getProtocolManager());
+            new FramePacketSender(this, frameProcessorTask.getFrameBuffers());
         framePacketSender.runTaskTimerAsynchronously(this, 0, 1);
     }
 
