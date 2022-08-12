@@ -27,6 +27,11 @@ public final class MakiScreen extends JavaPlugin implements Listener {
 
     @Override
     public void onEnable() {
+        if (!getConfig().getBoolean("isMaster")){
+            getServer().getPluginManager().registerEvents(new SlavePlayerJoin(), this);
+            return;
+        }
+
         ConfigFile configFile = new ConfigFile(this);
         configFile.run();
 
@@ -99,5 +104,7 @@ public final class MakiScreen extends JavaPlugin implements Listener {
 
         return true;
     }
+
+
 
 }

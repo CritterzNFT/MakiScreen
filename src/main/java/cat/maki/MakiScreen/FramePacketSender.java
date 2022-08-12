@@ -4,6 +4,9 @@ import java.net.http.WebSocket.Listener;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
+import java.util.UUID;
+
+import com.github.puregero.multilib.MultiLib;
 import org.bukkit.Bukkit;
 import org.bukkit.craftbukkit.v1_18_R1.entity.CraftPlayer;
 import org.bukkit.entity.Player;
@@ -21,6 +24,19 @@ class FramePacketSender extends BukkitRunnable implements Listener, org.bukkit.e
   private final MakiScreen plugin;
 
   public FramePacketSender(MakiScreen plugin, Queue<byte[][]> frameBuffers) {
+    MultiLib.onString(plugin, "maki:playerJoin", stringUuid -> {
+      UUID uuid = UUID.fromString(stringUuid);
+      Player player = Bukkit.getPlayer(uuid);
+      if (player != null) {
+        List<PacketPlayOutMap> packets = new ArrayList<>();
+        for (ScreenPart screenPart : MakiScreen.screens) {
+          if (screenPart.lastFrameBuffer != null) {
+            packets.add(getPacket(screenPart.mapId, screenPart.lastFrameBuffer));
+          }
+        }
+        sendToPlayer(player, packets);
+      }
+    });
     this.frameBuffers = frameBuffers;
     this.plugin = plugin;
     this.plugin.getServer().getPluginManager().registerEvents(this, plugin);

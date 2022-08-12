@@ -1,4 +1,4 @@
-package cat.maki.MakiScreen;
+    package cat.maki.MakiScreen;
 
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.Plugin;
@@ -34,6 +34,7 @@ public class ConfigFile extends BukkitRunnable {
         } else {
             config.addDefault("size", 1);
         }
+        StreamPort = config.getInt("stream_port");
     }
 
 
@@ -56,6 +57,18 @@ public class ConfigFile extends BukkitRunnable {
                 mapWidth = 8;
                 VCWidth = 128 * 8;
                 VCHeight = 128 * 4;
+            }
+            case 4 -> {
+                mapSize = 128;
+                mapWidth = 16;
+                VCWidth = 128 * 16;
+                VCHeight = 128 * 8;
+            }
+            case 5 -> {
+                mapSize = 512;
+                mapWidth = 32;
+                VCWidth = 128 * 32;
+                VCHeight = 128 * 16;
             }
         }
 
