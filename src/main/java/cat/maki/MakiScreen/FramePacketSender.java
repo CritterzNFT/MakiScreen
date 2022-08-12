@@ -6,7 +6,11 @@ import java.util.List;
 import java.util.Queue;
 import java.util.UUID;
 
+import com.comphenix.protocol.PacketType;
+import com.comphenix.protocol.ProtocolManager;
+import com.comphenix.protocol.events.PacketContainer;
 import com.github.puregero.multilib.MultiLib;
+import net.minecraft.world.level.saveddata.maps.MapIcon;
 import org.bukkit.Bukkit;
 import org.bukkit.craftbukkit.v1_18_R1.entity.CraftPlayer;
 import org.bukkit.entity.Player;
@@ -22,13 +26,18 @@ class FramePacketSender extends BukkitRunnable implements Listener, org.bukkit.e
   private long frameNumber = 0;
   private final Queue<byte[][]> frameBuffers;
   private final MakiScreen plugin;
+  private final ProtocolManager protocolManager;
 
-  public FramePacketSender(MakiScreen plugin, Queue<byte[][]> frameBuffers) {
+  public FramePacketSender(MakiScreen plugin, Queue<byte[][]> frameBuffers, ProtocolManager protocolManager) {
+    this.protocolManager = protocolManager;
+    this.frameBuffers = frameBuffers;
+    this.plugin = plugin;
+    this.plugin.getServer().getPluginManager().registerEvents(this, plugin);
     MultiLib.onString(plugin, "maki:playerJoin", stringUuid -> {
       UUID uuid = UUID.fromString(stringUuid);
       Player player = Bukkit.getPlayer(uuid);
       if (player != null) {
-        List<PacketPlayOutMap> packets = new ArrayList<>();
+        List<PacketContainer> packets = new ArrayList<>();
         for (ScreenPart screenPart : MakiScreen.screens) {
           if (screenPart.lastFrameBuffer != null) {
             packets.add(getPacket(screenPart.mapId, screenPart.lastFrameBuffer));
@@ -37,9 +46,7 @@ class FramePacketSender extends BukkitRunnable implements Listener, org.bukkit.e
         sendToPlayer(player, packets);
       }
     });
-    this.frameBuffers = frameBuffers;
-    this.plugin = plugin;
-    this.plugin.getServer().getPluginManager().registerEvents(this, plugin);
+
   }
 
   @Override
@@ -48,11 +55,11 @@ class FramePacketSender extends BukkitRunnable implements Listener, org.bukkit.e
     if (buffers == null) {
       return;
     }
-    List<PacketPlayOutMap> packets = new ArrayList<>(MakiScreen.screens.size());
+    List<PacketContainer> packets = new ArrayList<>(MakiScreen.screens.size());
     for (ScreenPart screenPart : MakiScreen.screens) {
       byte[] buffer = buffers[screenPart.partId];
       if (buffer != null) {
-        PacketPlayOutMap packet = getPacket(screenPart.mapId, buffer);
+        PacketContainer packet = getPacket(screenPart.mapId, buffer);
         if (!screenPart.modified) {
           packets.add(0, packet);
         } else {
@@ -84,7 +91,7 @@ class FramePacketSender extends BukkitRunnable implements Listener, org.bukkit.e
     new BukkitRunnable() {
       @Override
       public void run() {
-        List<PacketPlayOutMap> packets = new ArrayList<>();
+        List<PacketContainer> packets = new ArrayList<>();
         for (ScreenPart screenPart : MakiScreen.screens) {
           if (screenPart.lastFrameBuffer != null) {
             packets.add(getPacket(screenPart.mapId, screenPart.lastFrameBuffer));
@@ -95,21 +102,30 @@ class FramePacketSender extends BukkitRunnable implements Listener, org.bukkit.e
     }.runTaskLater(plugin, 10);
   }
 
-  private void sendToPlayer(Player player, List<PacketPlayOutMap> packets) {
+  private void sendToPlayer(Player player, List<PacketContainer> packets) {
     final PlayerConnection connection = ((CraftPlayer) player).getHandle().b;
-    for (PacketPlayOutMap packet : packets) {
+    for (PacketContainer packet : packets) {
       if (packet != null) {
-        connection.a(packet);
+        protocolManager.sendServerPacket(player, packet);
       }
     }
   }
 
-  private PacketPlayOutMap getPacket(int mapId, byte[] data) {
+  private PacketContainer getPacket(int mapId, byte[] data) {
     if (data == null) {
       throw new NullPointerException("data is null");
     }
-    return new PacketPlayOutMap(
+    PacketContainer map = new PacketContainer(PacketType.Play.Server.MAP);
+    map.getIntegers().write(0, mapId);
+    map.getBytes().write(0, (byte) 0);
+    map.getIntegers().write(3, 128);
+    map.getIntegers().write(4, 128);
+    map.getByteArrays().write(0, data);
+    map.getSpecificModifier(MapIcon[].class).write(0, new MapIcon[0]);
+    return map;
+    /*return new PacketPlayOutMap(
         mapId, (byte) 0, false, null,
         new b(0, 0, 128, 128, data));
+  }*/
   }
 }
