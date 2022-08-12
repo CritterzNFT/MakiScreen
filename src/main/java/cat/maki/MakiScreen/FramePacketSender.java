@@ -1,26 +1,21 @@
 package cat.maki.MakiScreen;
 
-import java.net.http.WebSocket.Listener;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Queue;
-import java.util.UUID;
-
 import com.comphenix.protocol.PacketType;
 import com.comphenix.protocol.ProtocolManager;
 import com.comphenix.protocol.events.PacketContainer;
 import com.github.puregero.multilib.MultiLib;
 import net.minecraft.world.level.saveddata.maps.MapIcon;
 import org.bukkit.Bukkit;
-import org.bukkit.craftbukkit.v1_18_R1.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import net.minecraft.network.protocol.game.PacketPlayOutMap;
-import net.minecraft.world.level.saveddata.maps.WorldMap.b;
-import net.minecraft.server.network.PlayerConnection;
+import java.net.http.WebSocket.Listener;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Queue;
+import java.util.UUID;
 
 class FramePacketSender extends BukkitRunnable implements Listener, org.bukkit.event.Listener {
   private long frameNumber = 0;
@@ -103,7 +98,6 @@ class FramePacketSender extends BukkitRunnable implements Listener, org.bukkit.e
   }
 
   private void sendToPlayer(Player player, List<PacketContainer> packets) {
-    final PlayerConnection connection = ((CraftPlayer) player).getHandle().b;
     for (PacketContainer packet : packets) {
       if (packet != null) {
         protocolManager.sendServerPacket(player, packet);
