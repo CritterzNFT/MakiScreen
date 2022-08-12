@@ -65,7 +65,7 @@ class FramePacketSender extends BukkitRunnable implements Listener, org.bukkit.e
       }
     }
 
-    for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
+    for (Player onlinePlayer : MultiLib.getAllOnlinePlayers()) {
       sendToPlayer(onlinePlayer, packets);
     }
 
