@@ -43,12 +43,66 @@ public final class MakiScreen extends JavaPlugin implements Listener {
     @Override
     public void onEnable() {
         if (!getConfig().getBoolean("isMaster")) {
+            playerConnectionManager = new PlayerConnectionManager();
             getServer().getPluginManager().registerEvents(new SlavePlayerJoin(), this);
-            return;
+        } else {
+            init();
+        }
+    }
+
+    @Override
+    public void onDisable() {
+        PacketEvents.getAPI().terminate();
+        logger.info("Bye!");
+        videoCapture.cleanup();
+    }
+
+
+    @Override
+    public boolean onCommand(@NotNull CommandSender sender, Command command, @NotNull String alias, String[] args) {
+        Player player = (Player) sender;
+        if (command.getName().equals("maki")) {
+            if (!player.hasPermission("makiscreen.admin")) {
+                player.sendMessage("You don't have permission!");
+                return false;
+            }
+
+            for (int i = 0; i < ConfigFile.getMapSize(); i++) {
+                MapView mapView = getServer().createMap(player.getWorld());
+                mapView.setScale(MapView.Scale.CLOSEST);
+                mapView.setUnlimitedTracking(true);
+                for (MapRenderer renderer : mapView.getRenderers()) {
+                    mapView.removeRenderer(renderer);
+                }
+
+                ItemStack itemStack = new ItemStack(Material.FILLED_MAP);
+
+                MapMeta mapMeta = (MapMeta) itemStack.getItemMeta();
+                mapMeta.setMapView(mapView);
+
+                itemStack.setItemMeta(mapMeta);
+                player.getInventory().addItem(itemStack);
+                screens.add(new ScreenPart(mapView.getId(), i));
+                ImageManager manager = ImageManager.getInstance();
+                manager.saveImage(mapView.getId(), i);
+            }
         }
 
-        playerConnectionManager = new PlayerConnectionManager();
+        if (command.getName().equals("setMakiMaster")) {
+            if (!player.hasPermission("makiscreen.admin")) {
+                player.sendMessage("You don't have permission!");
+                return false;
+            }
+            getConfig().set("isMaster", true);
+            saveConfig();
+            init();
+        }
 
+        return true;
+    }
+
+    private void init(){
+        playerConnectionManager = new PlayerConnectionManager();
         ConfigFile configFile = new ConfigFile(this);
         configFile.run();
 
@@ -80,47 +134,6 @@ public final class MakiScreen extends JavaPlugin implements Listener {
         FramePacketSender framePacketSender =
                 new FramePacketSender(this, frameProcessorTask.getFrameBuffers());
         framePacketSender.runTaskTimerAsynchronously(this, 0, 1);
-    }
-
-    @Override
-    public void onDisable() {
-        PacketEvents.getAPI().terminate();
-        logger.info("Bye!");
-        videoCapture.cleanup();
-    }
-
-
-    @Override
-    public boolean onCommand(@NotNull CommandSender sender, Command command, @NotNull String alias, String[] args) {
-        Player player = (Player) sender;
-        if (command.getName().equals("maki")) {
-            if (!player.isOp()) {
-                player.sendMessage("You don't have permission!");
-                return false;
-            }
-
-            for (int i = 0; i < ConfigFile.getMapSize(); i++) {
-                MapView mapView = getServer().createMap(player.getWorld());
-                mapView.setScale(MapView.Scale.CLOSEST);
-                mapView.setUnlimitedTracking(true);
-                for (MapRenderer renderer : mapView.getRenderers()) {
-                    mapView.removeRenderer(renderer);
-                }
-
-                ItemStack itemStack = new ItemStack(Material.FILLED_MAP);
-
-                MapMeta mapMeta = (MapMeta) itemStack.getItemMeta();
-                mapMeta.setMapView(mapView);
-
-                itemStack.setItemMeta(mapMeta);
-                player.getInventory().addItem(itemStack);
-                screens.add(new ScreenPart(mapView.getId(), i));
-                ImageManager manager = ImageManager.getInstance();
-                manager.saveImage(mapView.getId(), i);
-            }
-        }
-
-        return true;
     }
 
     public static MakiScreen getInstance() {
