@@ -1,4 +1,4 @@
-    package cat.maki.MakiScreen;
+package cat.maki.MakiScreen;
 
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.Plugin;
@@ -90,7 +90,9 @@ public class ConfigFile extends BukkitRunnable {
         return VCHeight;
     }
 
-    public static int getStreamPort() {return StreamPort; }
+    public static int getStreamPort() {
+        return StreamPort;
+    }
 
 
 }

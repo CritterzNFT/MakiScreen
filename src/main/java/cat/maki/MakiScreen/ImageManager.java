@@ -130,7 +130,7 @@ public class ImageManager implements Listener {
 
         public void reloadConfig() {
             if (dataConfigFile == null)
-                dataConfigFile = new File(plugin.getDataFolder(),name);
+                dataConfigFile = new File(plugin.getDataFolder(), name);
 
             this.dataConfig = YamlConfiguration
                     .loadConfiguration(dataConfigFile);

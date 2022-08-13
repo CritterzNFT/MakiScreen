@@ -19,11 +19,12 @@ class VideoCaptureUDPServer extends Thread {
 
     private DatagramSocket socket;
 
-    public void onFrame(BufferedImage frame) { }
+    public void onFrame(BufferedImage frame) {
+    }
 
     public void run() {
         try {
-            byte[] buffer = new byte[1024*1024]; // 1 mb
+            byte[] buffer = new byte[1024 * 1024]; // 1 mb
             logger.info("Listening to stream on port " + ConfigFile.getStreamPort());
             socket = new DatagramSocket(ConfigFile.getStreamPort());
             DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
@@ -80,7 +81,7 @@ class VideoCaptureUDPServer extends Thread {
                         }
 
                         // reset
-                         output.reset();
+                        output.reset();
                         soi = 0;
                         eoi = 0;
                     }
@@ -95,8 +96,8 @@ class VideoCaptureUDPServer extends Thread {
 
     public void cleanup() {
         running = false;
-        if (socket!=null) socket.disconnect();
-        if (socket!=null) socket.close();
+        if (socket != null) socket.disconnect();
+        if (socket != null) socket.close();
     }
 }
 

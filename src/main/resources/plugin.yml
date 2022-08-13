@@ -7,3 +7,10 @@ commands:
   maki:
     description: Does things!
     usage: /<command>
+softdepend:
+  - ProtocolLib
+  - ProtocolSupport
+  - ViaVersion
+  - ViaBackwards
+  - ViaRewind
+  - Geyser-Spigot

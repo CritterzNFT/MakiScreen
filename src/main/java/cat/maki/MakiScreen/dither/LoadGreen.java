@@ -23,46 +23,48 @@
  */
 package cat.maki.MakiScreen.dither;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.io.Serial;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.RecursiveTask;
-import org.jetbrains.annotations.NotNull;
 
 final class LoadGreen extends RecursiveTask<byte[]> {
 
-  @Serial private static final long serialVersionUID = -1221290051151782146L;
+    @Serial
+    private static final long serialVersionUID = -1221290051151782146L;
 
-  private final int r;
-  private final int g;
-  private final int[] palette;
+    private final int r;
+    private final int g;
+    private final int[] palette;
 
-  LoadGreen(final int[] palette, final int r, final int g) {
-    this.r = r;
-    this.g = g;
-    this.palette = palette;
-  }
-
-  @Override
-  protected byte @NotNull [] compute() {
-    final List<LoadBlue> blueSub = new ArrayList<>(128);
-    this.forkBlue(blueSub);
-    return this.getMatches(blueSub);
-  }
-
-  private void forkBlue(@NotNull final List<LoadBlue> blueSub) {
-    for (int b = 0; b < 256; b += 2) {
-      final LoadBlue blue = new LoadBlue(this.palette, this.r, this.g, b);
-      blueSub.add(blue);
-      blue.fork();
+    LoadGreen(final int[] palette, final int r, final int g) {
+        this.r = r;
+        this.g = g;
+        this.palette = palette;
     }
-  }
 
-  private byte @NotNull [] getMatches(@NotNull final List<LoadBlue> blueSub) {
-    final byte[] matches = new byte[128];
-    for (int i = 0; i < 128; i++) {
-      matches[i] = blueSub.get(i).join();
+    @Override
+    protected byte @NotNull [] compute() {
+        final List<LoadBlue> blueSub = new ArrayList<>(128);
+        this.forkBlue(blueSub);
+        return this.getMatches(blueSub);
     }
-    return matches;
-  }
+
+    private void forkBlue(@NotNull final List<LoadBlue> blueSub) {
+        for (int b = 0; b < 256; b += 2) {
+            final LoadBlue blue = new LoadBlue(this.palette, this.r, this.g, b);
+            blueSub.add(blue);
+            blue.fork();
+        }
+    }
+
+    private byte @NotNull [] getMatches(@NotNull final List<LoadBlue> blueSub) {
+        final byte[] matches = new byte[128];
+        for (int i = 0; i < 128; i++) {
+            matches[i] = blueSub.get(i).join();
+        }
+        return matches;
+    }
 }

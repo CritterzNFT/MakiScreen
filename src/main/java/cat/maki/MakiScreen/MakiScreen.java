@@ -1,5 +1,8 @@
 package cat.maki.MakiScreen;
 
+import cat.maki.MakiScreen.connection.PlayerConnectionManager;
+import com.github.retrooper.packetevents.PacketEvents;
+import io.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -22,15 +25,29 @@ public final class MakiScreen extends JavaPlugin implements Listener {
     private final Logger logger = getLogger();
 
     public static final Set<ScreenPart> screens = new TreeSet<>(
-        Comparator.comparingInt(to -> to.mapId));
+            Comparator.comparingInt(to -> to.mapId));
     private VideoCapture videoCapture;
+    private static MakiScreen makiScreen;
+    private PlayerConnectionManager playerConnectionManager;
+
+    @Override
+    public void onLoad() {
+        makiScreen = this;
+        PacketEvents.setAPI(SpigotPacketEventsBuilder.build(this));
+        //Are all listeners read only?
+        PacketEvents.getAPI().getSettings().readOnlyListeners(true)
+                .bStats(true);
+        PacketEvents.getAPI().load();
+    }
 
     @Override
     public void onEnable() {
-        if (!getConfig().getBoolean("isMaster")){
+        if (!getConfig().getBoolean("isMaster")) {
             getServer().getPluginManager().registerEvents(new SlavePlayerJoin(), this);
             return;
         }
+
+        playerConnectionManager = new PlayerConnectionManager();
 
         ConfigFile configFile = new ConfigFile(this);
         configFile.run();
@@ -41,10 +58,10 @@ public final class MakiScreen extends JavaPlugin implements Listener {
         logger.info("Hi!");
         getServer().getPluginManager().registerEvents(this, this);
 
-        logger.info("Config file loaded \n"+
-                "Map Size: " + ConfigFile.getMapSize() +"\n"+
-                "Map Width: " + ConfigFile.getMapWidth() +"\n"+
-                "Width: " + ConfigFile.getVCWidth() +"\n"+
+        logger.info("Config file loaded \n" +
+                "Map Size: " + ConfigFile.getMapSize() + "\n" +
+                "Map Width: " + ConfigFile.getMapWidth() + "\n" +
+                "Width: " + ConfigFile.getVCWidth() + "\n" +
                 "Height: " + ConfigFile.getVCHeight()
 
         );
@@ -61,12 +78,13 @@ public final class MakiScreen extends JavaPlugin implements Listener {
         FrameProcessorTask frameProcessorTask = new FrameProcessorTask(mapSize, mapWidth);
         frameProcessorTask.runTaskTimerAsynchronously(this, 0, 1);
         FramePacketSender framePacketSender =
-            new FramePacketSender(this, frameProcessorTask.getFrameBuffers());
+                new FramePacketSender(this, frameProcessorTask.getFrameBuffers());
         framePacketSender.runTaskTimerAsynchronously(this, 0, 1);
     }
 
     @Override
     public void onDisable() {
+        PacketEvents.getAPI().terminate();
         logger.info("Bye!");
         videoCapture.cleanup();
     }
@@ -81,7 +99,7 @@ public final class MakiScreen extends JavaPlugin implements Listener {
                 return false;
             }
 
-            for (int i=0; i<ConfigFile.getMapSize(); i++) {
+            for (int i = 0; i < ConfigFile.getMapSize(); i++) {
                 MapView mapView = getServer().createMap(player.getWorld());
                 mapView.setScale(MapView.Scale.CLOSEST);
                 mapView.setUnlimitedTracking(true);
@@ -105,6 +123,11 @@ public final class MakiScreen extends JavaPlugin implements Listener {
         return true;
     }
 
+    public static MakiScreen getInstance() {
+        return makiScreen;
+    }
 
-
+    public PlayerConnectionManager getPlayerConnectionManager() {
+        return playerConnectionManager;
+    }
 }
