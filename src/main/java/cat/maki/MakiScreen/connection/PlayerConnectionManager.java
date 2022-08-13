@@ -4,6 +4,7 @@ import cat.maki.MakiScreen.MakiScreen;
 import com.github.puregero.multilib.MultiLib;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListenerPriority;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import java.util.Map;
@@ -43,6 +44,12 @@ public class PlayerConnectionManager {
 
         PacketEvents.getAPI().getEventManager().registerListener(new KeepAlivePacketListener(), PacketListenerPriority.MONITOR);
         PacketEvents.getAPI().init();
+
+        Bukkit.getScheduler().runTaskTimer(MakiScreen.getInstance(), () -> {
+            for (Player player : MultiLib.getAllOnlinePlayers()) {
+                Bukkit.getLogger().info(player.getName() + ": ping " + playerPings.get(player.getUniqueId()) + "ms" + " - stability " + playerStability.get(player.getUniqueId()) + ".");
+            }
+        }, 0, 20);
     }
 
     private final Map<UUID, Long> playerPings = new ConcurrentHashMap<>();
@@ -67,6 +74,9 @@ public class PlayerConnectionManager {
 
     public void receivedResponse(long id, Player player) {
         KeepAlive keepAlive = keepAliveMap.get(id);
+        if (keepAlive == null) {
+            return;
+        }
         if (keepAlive.getPlayerUuid() != player.getUniqueId())
             return;
         updatePlayerPing(keepAlive.getPlayerUuid(), keepAlive.received());
@@ -81,7 +91,14 @@ public class PlayerConnectionManager {
         if (oldPing == 0L)
             return;
         double stability = playerStability.get(uuid);
-        playerStability.put(uuid, stability + (currentPing - oldPing) / oldPing);
+        if (isNear(currentPing, oldPing, (int) stability/10)) {
+            stability *= 0.9;
+        } else {
+            stability += (currentPing - oldPing) / 20D;
+        }
+        if (stability < 1)
+            stability = 1;
+        playerStability.put(uuid, stability);
     }
 
     public boolean shouldSendMapPlayer(Player player) {
@@ -91,12 +108,16 @@ public class PlayerConnectionManager {
         } else {
             int count = sendCount.get(player.getUniqueId()) + 1;
             double stability = playerStability.get(player.getUniqueId());
-            if (count > 10) {
+            if (count > 1000) {
                 sendCount.put(player.getUniqueId(), 1);
             } else {
                 sendCount.put(player.getUniqueId(), count);
             }
             return count % (int) stability == 0 || stability <= 1;
         }
+    }
+
+    private boolean isNear(long currentPing, long oldPing, int difference) {
+        return Math.abs(Math.abs(currentPing) - Math.abs(oldPing)) < difference;
     }
 }

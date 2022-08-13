@@ -3,6 +3,7 @@ package cat.maki.MakiScreen;
 import cat.maki.MakiScreen.connection.PlayerConnectionManager;
 import com.github.retrooper.packetevents.PacketEvents;
 import io.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -81,7 +82,7 @@ public final class MakiScreen extends JavaPlugin implements Listener {
                 mapMeta.setMapView(mapView);
 
                 itemStack.setItemMeta(mapMeta);
-                player.getInventory().addItem(itemStack);
+                player.getWorld().dropItem(player.getLocation(), itemStack);
                 screens.add(new ScreenPart(mapView.getId(), i));
                 ImageManager manager = ImageManager.getInstance();
                 manager.saveImage(mapView.getId(), i);
@@ -94,6 +95,16 @@ public final class MakiScreen extends JavaPlugin implements Listener {
                 return false;
             }
             getConfig().set("isMaster", true);
+            saveConfig();
+            init();
+        }
+
+        if (command.getName().equals("setMakiSlave")) {
+            if (!player.hasPermission("makiscreen.admin")) {
+                player.sendMessage("You don't have permission!");
+                return false;
+            }
+            getConfig().set("isMaster", false);
             saveConfig();
             init();
         }
