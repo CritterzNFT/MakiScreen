@@ -91,7 +91,10 @@ public class PlayerConnectionManager {
         if (oldPing == 0L)
             return;
         double stability = playerStability.get(uuid);
-        if (isNear(currentPing, oldPing, (int) stability/10)) {
+        int difference = (int) stability/10;
+        if (difference == 0)
+            difference = 1;
+        if (isNear(currentPing, oldPing, difference)) {
             stability *= 0.9;
         } else {
             stability += (currentPing - oldPing) / 20D;
