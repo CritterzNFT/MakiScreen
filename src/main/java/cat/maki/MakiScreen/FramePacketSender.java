@@ -108,18 +108,15 @@ class FramePacketSender extends BukkitRunnable implements Listener, org.bukkit.e
     private void playerJoin(Player player) {
         if (player != null) {
             MakiScreen.getInstance().getPlayerConnectionManager().addPlayer(player);
-            new BukkitRunnable() {
-                @Override
-                public void run() {
-                    List<WrapperPlayServerMapData> packets = new ArrayList<>();
-                    for (ScreenPart screenPart : MakiScreen.screens) {
-                        if (screenPart.lastFrameBuffer != null) {
-                            packets.add(getPacket(screenPart.mapId, screenPart.lastFrameBuffer));
-                        }
+            Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, () -> {
+                List<WrapperPlayServerMapData> packets = new ArrayList<>();
+                for (ScreenPart screenPart : MakiScreen.screens) {
+                    if (screenPart.lastFrameBuffer != null) {
+                        packets.add(getPacket(screenPart.mapId, screenPart.lastFrameBuffer));
                     }
-                    sendToPlayer(player, packets);
                 }
-            }.runTaskLater(plugin, 10);
+                sendToPlayer(player, packets);
+            }, 10);
         }
     }
 
