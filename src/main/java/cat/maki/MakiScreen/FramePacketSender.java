@@ -1,11 +1,9 @@
 package cat.maki.MakiScreen;
 
+import cat.maki.MakiScreen.customWrapper.WrapperPlayServerMapData;
 import com.github.puregero.multilib.MultiLib;
-import net.minecraft.network.protocol.game.PacketPlayOutMap;
-import net.minecraft.server.network.PlayerConnection;
-import net.minecraft.world.level.saveddata.maps.WorldMap.b;
+import com.github.retrooper.packetevents.PacketEvents;
 import org.bukkit.Bukkit;
-import org.bukkit.craftbukkit.v1_18_R1.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -45,11 +43,11 @@ class FramePacketSender extends BukkitRunnable implements Listener, org.bukkit.e
         if (buffers == null) {
             return;
         }
-        List<PacketPlayOutMap> packets = new ArrayList<>(MakiScreen.screens.size());
+        List<WrapperPlayServerMapData> packets = new ArrayList<>(MakiScreen.screens.size());
         for (ScreenPart screenPart : MakiScreen.screens) {
             byte[] buffer = buffers[screenPart.partId];
             if (buffer != null) {
-                PacketPlayOutMap packet = getPacket(screenPart.mapId, buffer);
+                WrapperPlayServerMapData packet = getPacket(screenPart.mapId, buffer);
                 if (!screenPart.modified) {
                     packets.add(0, packet);
                 } else {
@@ -87,26 +85,24 @@ class FramePacketSender extends BukkitRunnable implements Listener, org.bukkit.e
         playerLeave(player);
     }
 
-    private void sendToPlayer(Player player, List<PacketPlayOutMap> packets) {
+    private void sendToPlayer(Player player, List<WrapperPlayServerMapData> packets) {
         boolean shouldSend = MakiScreen.getInstance().getPlayerConnectionManager().shouldSendMapPlayer(player);
         if (!shouldSend) {
             return;
         }
-        final PlayerConnection connection = ((CraftPlayer) player).getHandle().b;
-        for (PacketPlayOutMap packet : packets) {
+        for (WrapperPlayServerMapData packet : packets) {
             if (packet != null) {
-                connection.a(packet);
+                PacketEvents.getAPI().getPlayerManager().sendPacket(player, packet);
             }
         }
     }
 
-    private PacketPlayOutMap getPacket(int mapId, byte[] data) {
+    private WrapperPlayServerMapData getPacket(int mapId, byte[] data) {
         if (data == null) {
             throw new NullPointerException("data is null");
         }
-        return new PacketPlayOutMap(
-                mapId, (byte) 0, false, null,
-                new b(0, 0, 128, 128, data));
+        return new WrapperPlayServerMapData(mapId, 0, false, null,
+                data, 0, 0, 128, 128);
     }
 
     private void playerJoin(Player player) {
@@ -115,7 +111,7 @@ class FramePacketSender extends BukkitRunnable implements Listener, org.bukkit.e
             new BukkitRunnable() {
                 @Override
                 public void run() {
-                    List<PacketPlayOutMap> packets = new ArrayList<>();
+                    List<WrapperPlayServerMapData> packets = new ArrayList<>();
                     for (ScreenPart screenPart : MakiScreen.screens) {
                         if (screenPart.lastFrameBuffer != null) {
                             packets.add(getPacket(screenPart.mapId, screenPart.lastFrameBuffer));
