@@ -96,7 +96,6 @@ class VideoCaptureUDPServer extends Thread {
 
     public void cleanup() {
         running = false;
-        if (socket != null) socket.disconnect();
         if (socket != null) socket.close();
     }
 }
