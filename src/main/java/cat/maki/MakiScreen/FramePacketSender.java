@@ -11,6 +11,7 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.net.http.WebSocket.Listener;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
@@ -22,6 +23,10 @@ class FramePacketSender extends BukkitRunnable implements Listener, org.bukkit.e
     private final MakiScreen plugin;
 
     public FramePacketSender(MakiScreen plugin, Queue<byte[][]> frameBuffers) {
+        this.frameBuffers = frameBuffers;
+        this.plugin = plugin;
+        this.plugin.getServer().getPluginManager().registerEvents(this, plugin);
+
         MultiLib.onString(plugin, "maki:playerJoin", stringUuid -> {
             UUID uuid = UUID.fromString(stringUuid);
             Player player = Bukkit.getPlayer(uuid);
@@ -32,9 +37,17 @@ class FramePacketSender extends BukkitRunnable implements Listener, org.bukkit.e
             Player player = Bukkit.getPlayer(uuid);
             playerLeave(player);
         });
-        this.frameBuffers = frameBuffers;
-        this.plugin = plugin;
-        this.plugin.getServer().getPluginManager().registerEvents(this, plugin);
+        MultiLib.on(plugin, "maki:frameBuffer", data -> {
+            ByteBuffer buffer = ByteBuffer.wrap(data);
+            int size = buffer.getInt();
+            byte[][] frameBuffer = new byte[size][];
+            for (int i = 0; i < size; i++) {
+                int length = buffer.getInt();
+                frameBuffer[i] = new byte[length];
+                buffer.get(frameBuffer[i]);
+            }
+            this.frameBuffers.offer(frameBuffer);
+        });
     }
 
     @Override
@@ -46,7 +59,7 @@ class FramePacketSender extends BukkitRunnable implements Listener, org.bukkit.e
         List<WrapperPlayServerMapData> packets = new ArrayList<>(MakiScreen.screens.size());
         for (ScreenPart screenPart : MakiScreen.screens) {
             byte[] buffer = buffers[screenPart.partId];
-            if (buffer != null) {
+            if (buffer != null && buffer.length > 0) {
                 WrapperPlayServerMapData packet = getPacket(screenPart.mapId, buffer);
                 if (!screenPart.modified) {
                     packets.add(0, packet);
@@ -60,7 +73,7 @@ class FramePacketSender extends BukkitRunnable implements Listener, org.bukkit.e
             }
         }
 
-        for (Player onlinePlayer : MultiLib.getAllOnlinePlayers()) {
+        for (Player onlinePlayer : MultiLib.getLocalOnlinePlayers()) {
             sendToPlayer(onlinePlayer, packets);
         }
 

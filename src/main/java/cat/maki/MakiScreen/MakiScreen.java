@@ -43,12 +43,7 @@ public final class MakiScreen extends JavaPlugin implements Listener {
 
     @Override
     public void onEnable() {
-        if (!getConfig().getBoolean("isMaster")) {
-            playerConnectionManager = new PlayerConnectionManager();
-            getServer().getPluginManager().registerEvents(new SlavePlayerJoin(), this);
-        } else {
-            init();
-        }
+        init();
     }
 
     @Override

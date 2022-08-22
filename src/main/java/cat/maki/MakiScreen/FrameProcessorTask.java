@@ -1,10 +1,12 @@
 package cat.maki.MakiScreen;
 
+import com.github.puregero.multilib.MultiLib;
 import com.google.common.collect.EvictingQueue;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
+import java.nio.ByteBuffer;
 import java.util.Queue;
 
 import static cat.maki.MakiScreen.dither.DitherLookupUtil.COLOR_MAP;
@@ -156,7 +158,29 @@ class FrameProcessorTask extends BukkitRunnable {
             }
 
             frameBuffers.offer(buffers);
+
+            notifyNewFrameBuffer(buffers);
         }
+    }
+
+    private void notifyNewFrameBuffer(byte[][] buffers) {
+        int size = 4;
+        for (int i = 0; i < buffers.length; i ++) {
+            size += 4 + (buffers[i] == null ? 0 : buffers[i].length);
+        }
+
+        ByteBuffer buffer = ByteBuffer.allocate(size);
+        buffer.putInt(buffers.length);
+        for (int i = 0; i < buffers.length; i ++) {
+            if (buffers[i] == null) {
+                buffer.putInt(0);
+            } else {
+                buffer.putInt(buffers[i].length);
+                buffer.put(buffers[i]);
+            }
+        }
+
+        MultiLib.notify("maki:frameBuffer", buffer.array());
     }
 
     private byte[] getMapData(int partId, int width) {
