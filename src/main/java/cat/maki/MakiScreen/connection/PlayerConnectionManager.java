@@ -108,7 +108,7 @@ public class PlayerConnectionManager {
         if (!sendCount.containsKey(player.getUniqueId())) {
             sendCount.put(player.getUniqueId(), 1);
             return true;
-        } else {
+        } else if (playerStability.containsKey(player.getUniqueId())) {
             int count = sendCount.get(player.getUniqueId()) + 1;
             double stability = playerStability.get(player.getUniqueId());
             if (count > 1000) {
@@ -117,6 +117,8 @@ public class PlayerConnectionManager {
                 sendCount.put(player.getUniqueId(), count);
             }
             return count % (int) stability == 0 || stability <= 1;
+        } else {
+            return false;
         }
     }
 
