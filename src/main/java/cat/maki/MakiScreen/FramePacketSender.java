@@ -18,7 +18,6 @@ import java.util.Queue;
 import java.util.UUID;
 
 class FramePacketSender extends BukkitRunnable implements Listener, org.bukkit.event.Listener {
-    private long frameNumber = 0;
     private final Queue<byte[][]> frameBuffers;
     private final MakiScreen plugin;
 
@@ -52,6 +51,11 @@ class FramePacketSender extends BukkitRunnable implements Listener, org.bukkit.e
 
     @Override
     public void run() {
+        // Skip some frames if we're running behind
+        while (frameBuffers.size() > 3) {
+            frameBuffers.poll();
+        }
+
         byte[][] buffers = frameBuffers.poll();
         if (buffers == null) {
             return;
@@ -76,15 +80,6 @@ class FramePacketSender extends BukkitRunnable implements Listener, org.bukkit.e
         for (Player onlinePlayer : MultiLib.getLocalOnlinePlayers()) {
             sendToPlayer(onlinePlayer, packets);
         }
-
-        if (frameNumber % 300 == 0) {
-            byte[][] peek = frameBuffers.peek();
-            if (peek != null) {
-                frameBuffers.clear();
-                frameBuffers.offer(peek);
-            }
-        }
-        frameNumber++;
     }
 
     @EventHandler
