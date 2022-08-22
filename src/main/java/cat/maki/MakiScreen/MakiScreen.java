@@ -84,26 +84,6 @@ public final class MakiScreen extends JavaPlugin implements Listener {
             }
         }
 
-        if (command.getName().equals("setMakiMaster")) {
-            if (!player.hasPermission("makiscreen.admin")) {
-                player.sendMessage("You don't have permission!");
-                return false;
-            }
-            getConfig().set("isMaster", true);
-            saveConfig();
-            init();
-        }
-
-        if (command.getName().equals("setMakiSlave")) {
-            if (!player.hasPermission("makiscreen.admin")) {
-                player.sendMessage("You don't have permission!");
-                return false;
-            }
-            getConfig().set("isMaster", false);
-            saveConfig();
-            init();
-        }
-
         return true;
     }
 

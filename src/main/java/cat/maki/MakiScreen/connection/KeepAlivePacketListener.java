@@ -17,10 +17,6 @@ public class KeepAlivePacketListener implements PacketListener {
             return;
         }
         WrapperPlayServerKeepAlive keepAlive = new WrapperPlayServerKeepAlive(event);
-        if (!MakiScreen.getInstance().getConfig().getBoolean("isMaster")) {
-            MultiLib.notify("maki:keepAliveSent", ((Player) event.getPlayer()).getUniqueId() + ":" + keepAlive.getId());
-            return;
-        }
         MakiScreen.getInstance().getPlayerConnectionManager().addKeepAlive(keepAlive.getId(), (Player) event.getPlayer());
     }
 
@@ -30,10 +26,6 @@ public class KeepAlivePacketListener implements PacketListener {
             return;
         }
         WrapperPlayClientKeepAlive keepAlive = new WrapperPlayClientKeepAlive(event);
-        if (!MakiScreen.getInstance().getConfig().getBoolean("isMaster")) {
-            MultiLib.notify("maki:keepAliveReceived", ((Player) event.getPlayer()).getUniqueId() + ":" + keepAlive.getId());
-            return;
-        }
         MakiScreen.getInstance().getPlayerConnectionManager().receivedResponse(keepAlive.getId(), (Player) event.getPlayer());
     }
 }

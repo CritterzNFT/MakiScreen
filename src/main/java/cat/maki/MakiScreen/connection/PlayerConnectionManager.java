@@ -13,40 +13,11 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class PlayerConnectionManager {
     public PlayerConnectionManager() {
-        if (!MakiScreen.getInstance().getConfig().getBoolean("isMaster")) {
-            PacketEvents.getAPI().getEventManager().registerListener(new KeepAlivePacketListener(), PacketListenerPriority.MONITOR);
-            PacketEvents.getAPI().init();
-            return;
-        }
-
-        MultiLib.onString(MakiScreen.getInstance(), "maki:keepAliveSent", string -> {
-            String[] split = string.split(":");
-            UUID playerUuid = UUID.fromString(split[0]);
-            long id = Long.parseLong(split[1]);
-            Player player = MakiScreen.getInstance().getServer().getPlayer(playerUuid);
-            if (player == null) {
-                return;
-            }
-            addKeepAlive(id, player);
-
-        });
-
-        MultiLib.onString(MakiScreen.getInstance(), "maki:keepAliveReceived", string -> {
-            String[] split = string.split(":");
-            UUID playerUuid = UUID.fromString(split[0]);
-            long id = Long.parseLong(split[1]);
-            Player player = MakiScreen.getInstance().getServer().getPlayer(playerUuid);
-            if (player == null) {
-                return;
-            }
-            receivedResponse(id, player);
-        });
-
         PacketEvents.getAPI().getEventManager().registerListener(new KeepAlivePacketListener(), PacketListenerPriority.MONITOR);
         PacketEvents.getAPI().init();
 
         Bukkit.getScheduler().runTaskTimer(MakiScreen.getInstance(), () -> {
-            for (Player player : MultiLib.getAllOnlinePlayers()) {
+            for (Player player : MultiLib.getLocalOnlinePlayers()) {
                 Bukkit.getLogger().info(player.getName() + ": ping " + playerPings.get(player.getUniqueId()) + "ms" + " - stability " + playerStability.get(player.getUniqueId()) + ".");
             }
         }, 0, 20);

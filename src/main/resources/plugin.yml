@@ -7,12 +7,6 @@ commands:
   maki:
     description: Does things!
     usage: /<command>
-  setMakiMaster:
-    description: Sets the MakiMaster
-    usage: /<command>
-  setMakiSlave:
-    description: Sets the MakiSlave
-    usage: /<command>
 softdepend:
   - ProtocolLib
   - ProtocolSupport

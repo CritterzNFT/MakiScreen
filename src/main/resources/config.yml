@@ -6,4 +6,3 @@
 # 5 = 4096x2048 = 512 maps
 size: 5
 stream_port: 1337
-isMaster: false
