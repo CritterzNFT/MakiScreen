@@ -13,7 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class PlayerConnectionManager {
     public PlayerConnectionManager() {
-        PacketEvents.getAPI().getEventManager().registerListener(new KeepAlivePacketListener(), PacketListenerPriority.MONITOR);
+        PacketEvents.getAPI().getEventManager().registerListener(new KeepAlivePacketListener(), PacketListenerPriority.LOWEST);
         PacketEvents.getAPI().init();
 
         Bukkit.getScheduler().runTaskTimer(MakiScreen.getInstance(), () -> {
