@@ -26,6 +26,7 @@ public class PlayerConnectionManager {
     private final Map<UUID, Long> playerPings = new ConcurrentHashMap<>();
     private final Map<UUID, Double> playerStability = new ConcurrentHashMap<>();
     private final Map<Long, KeepAlive> keepAliveMap = new ConcurrentHashMap<>();
+    private final Map<Integer, KeepAlive> pingMap = new ConcurrentHashMap<>();
     private final Map<UUID, Integer> sendCount = new ConcurrentHashMap<>();
 
     public void addPlayer(Player player) {
@@ -38,13 +39,19 @@ public class PlayerConnectionManager {
         playerStability.remove(player.getUniqueId());
     }
 
-    public void addKeepAlive(long id, Player player) {
+    public void addKeepAlive(Object id, Player player) {
         KeepAlive keepAlive = new KeepAlive(player);
-        keepAliveMap.put(id, keepAlive);
+        keepAliveMap.put((long) id, keepAlive);
+        pingMap.put((int) id, keepAlive);
     }
 
-    public void receivedResponse(long id, Player player) {
-        KeepAlive keepAlive = keepAliveMap.get(id);
+    public void receivedResponse(Object id, Player player) {
+        KeepAlive keepAlive = null;
+        if (id instanceof Long) {
+            keepAlive = keepAliveMap.get(id);
+        } else {
+            keepAlive = pingMap.get(id);
+        }
         if (keepAlive == null) {
             return;
         }

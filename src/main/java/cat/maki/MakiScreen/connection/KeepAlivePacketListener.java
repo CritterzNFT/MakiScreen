@@ -7,25 +7,41 @@ import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientKeepAlive;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPong;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerKeepAlive;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPing;
 import org.bukkit.entity.Player;
 
 public class KeepAlivePacketListener implements PacketListener {
     @Override
     public void onPacketSend(PacketSendEvent event) {
-        if (event.getPacketType() != PacketType.Play.Server.KEEP_ALIVE) {
-            return;
+        Object id = null;
+        if (event.getPacketType() == PacketType.Play.Server.KEEP_ALIVE) {
+            WrapperPlayServerKeepAlive keepAlive = new WrapperPlayServerKeepAlive(event);
+            id = keepAlive.getId();
         }
-        WrapperPlayServerKeepAlive keepAlive = new WrapperPlayServerKeepAlive(event);
-        MakiScreen.getInstance().getPlayerConnectionManager().addKeepAlive(keepAlive.getId(), (Player) event.getPlayer());
+        if (event.getPacketType() == PacketType.Play.Server.PING) {
+            WrapperPlayServerPing wrapperPlayServerPing = new WrapperPlayServerPing(event);
+            id = wrapperPlayServerPing.getId();
+        }
+        if (id == null)
+            return;
+        MakiScreen.getInstance().getPlayerConnectionManager().addKeepAlive(id, (Player) event.getPlayer());
     }
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
-        if (event.getPacketType() != PacketType.Play.Client.KEEP_ALIVE) {
-            return;
+        Object id = null;
+        if (event.getPacketType() == PacketType.Play.Client.KEEP_ALIVE) {
+            WrapperPlayClientKeepAlive keepAlive = new WrapperPlayClientKeepAlive(event);
+            id = keepAlive.getId();
         }
-        WrapperPlayClientKeepAlive keepAlive = new WrapperPlayClientKeepAlive(event);
-        MakiScreen.getInstance().getPlayerConnectionManager().receivedResponse(keepAlive.getId(), (Player) event.getPlayer());
+        if (event.getPacketType() == PacketType.Play.Client.PONG) {
+            WrapperPlayClientPong clientPong = new WrapperPlayClientPong(event);
+            id = clientPong.getId();
+        }
+        if (id == null)
+            return;
+        MakiScreen.getInstance().getPlayerConnectionManager().receivedResponse(id, (Player) event.getPlayer());
     }
 }
