@@ -239,7 +239,7 @@ class FrameProcessorTask extends BukkitRunnable {
             if (change > largestDifference)
                 largestDifference = change;
         }
-        response[0] = difference;
+        response[0] = difference / first.length;
         response[1] = largestDifference;
         return response;
     }
