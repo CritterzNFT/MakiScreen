@@ -216,6 +216,7 @@ class FrameProcessorTask extends BukkitRunnable {
 
         double[] response = getDifference(oldBytes, bytes);
         if (response[0] < difference && response[1] < difference*4){
+            MakiScreen.getInstance().getLogger().info("Not sending packet.");
             return null;
         }
 
