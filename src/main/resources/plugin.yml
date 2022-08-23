@@ -7,6 +7,9 @@ commands:
   maki:
     description: Does things!
     usage: /<command>
+  makiauto:
+    description: Does things!
+    usage: /<command>
 softdepend:
   - ProtocolLib
   - ProtocolSupport

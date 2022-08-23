@@ -4,9 +4,12 @@ import cat.maki.MakiScreen.connection.PlayerConnectionManager;
 import com.github.retrooper.packetevents.PacketEvents;
 import io.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.block.BlockFace;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.ItemFrame;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
 import org.bukkit.inventory.ItemStack;
@@ -57,14 +60,30 @@ public final class MakiScreen extends JavaPlugin implements Listener {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, Command command, @NotNull String alias, String[] args) {
         Player player = (Player) sender;
-        if (command.getName().equals("maki")) {
+        if (command.getName().equals("maki") || command.getName().equals("makiauto")) {
             if (!player.hasPermission("makiscreen.admin")) {
                 player.sendMessage("You don't have permission!");
                 return false;
             }
 
+            int x = 0;
+            int y = 0;
             for (int i = 0; i < ConfigFile.getMapSize(); i++) {
-                MapView mapView = getServer().createMap(player.getWorld());
+                MapView mapView = null;
+
+                // Check for existing maps
+                for (ScreenPart screenPart : screens) {
+                    if (screenPart.partId == i) {
+                        mapView = getServer().getMap(screenPart.mapId);
+                    }
+                }
+
+                // Create new map if none exists
+                if (mapView == null) {
+                    mapView = getServer().createMap(player.getWorld());
+                    screens.add(new ScreenPart(mapView.getId(), i));
+                }
+
                 mapView.setScale(MapView.Scale.CLOSEST);
                 mapView.setUnlimitedTracking(true);
                 for (MapRenderer renderer : mapView.getRenderers()) {
@@ -72,15 +91,31 @@ public final class MakiScreen extends JavaPlugin implements Listener {
                 }
 
                 ItemStack itemStack = new ItemStack(Material.FILLED_MAP);
-
                 MapMeta mapMeta = (MapMeta) itemStack.getItemMeta();
                 mapMeta.setMapView(mapView);
-
                 itemStack.setItemMeta(mapMeta);
-                player.getWorld().dropItem(player.getLocation(), itemStack);
-                screens.add(new ScreenPart(mapView.getId(), i));
+
                 ImageManager manager = ImageManager.getInstance();
                 manager.saveImage(mapView.getId(), i);
+
+                if (command.getName().equals("makiauto")) {
+                    Location location = player.getTargetBlock(10).getLocation();
+                    BlockFace facing = player.getTargetBlockFace(10).getOppositeFace();
+                    location = location.add(facing.getOppositeFace().getModX(), facing.getOppositeFace().getModY(), facing.getOppositeFace().getModZ());
+                    location = location.add(-x * facing.getModZ(), -y, x * facing.getModX());
+                    ItemFrame itemFrame = player.getWorld().spawn(location, ItemFrame.class);
+                    itemFrame.setVisible(false);
+                    itemFrame.setFacingDirection(facing.getOppositeFace());
+                    itemFrame.setItem(itemStack);
+                } else {
+                    player.getWorld().dropItem(player.getLocation(), itemStack);
+                }
+
+                x++;
+                if (x >= ConfigFile.getMapWidth()) {
+                    x = 0;
+                    y++;
+                }
             }
         }
 
