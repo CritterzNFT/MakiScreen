@@ -41,8 +41,11 @@ public class PlayerConnectionManager {
 
     public void addKeepAlive(Object id, Player player) {
         KeepAlive keepAlive = new KeepAlive(player);
-        keepAliveMap.put((long) id, keepAlive);
-        pingMap.put((int) id, keepAlive);
+        if (id instanceof Long) {
+            keepAliveMap.put((long) id, keepAlive);
+        } else {
+            pingMap.put((int) id, keepAlive);
+        }
     }
 
     public void receivedResponse(Object id, Player player) {
