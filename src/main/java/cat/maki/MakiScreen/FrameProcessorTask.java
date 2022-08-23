@@ -196,6 +196,8 @@ class FrameProcessorTask extends BukkitRunnable {
             bytes = new byte[128 * 128];
             modified = true;
         }
+        byte[] oldBytes = new byte[bytes.length];
+        System.arraycopy(bytes, 0, oldBytes, 0, bytes.length);
         for (int y = startY; y < maxY; y++) {
             int yIndex = y * width;
             for (int x = startX; x < maxX; x++) {
@@ -212,6 +214,10 @@ class FrameProcessorTask extends BukkitRunnable {
             }
         }
 
+        if (getDifference(oldBytes, bytes) < difference){
+            return null;
+        }
+
         if (modified) {
             this.cachedMapData[partId] = bytes;
             byte[] result = new byte[bytes.length];
@@ -221,4 +227,12 @@ class FrameProcessorTask extends BukkitRunnable {
         return null;
     }
 
+    public static int difference = 20;
+    private double getDifference(byte[] first, byte[] second) {
+        double difference = 0;
+        for (int i = 0; i < first.length; i++){
+            difference += Math.abs(first[i] - second[i]);
+        }
+        return difference/first.length;
+    }
 }

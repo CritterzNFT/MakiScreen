@@ -1,6 +1,7 @@
 package cat.maki.MakiScreen;
 
 import cat.maki.MakiScreen.connection.PlayerConnectionManager;
+import com.github.puregero.multilib.MultiLib;
 import com.github.retrooper.packetevents.PacketEvents;
 import io.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder;
 import org.bukkit.Bukkit;
@@ -23,6 +24,8 @@ import java.util.Comparator;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.logging.Logger;
+
+import static cat.maki.MakiScreen.FrameProcessorTask.difference;
 
 public final class MakiScreen extends JavaPlugin implements Listener {
 
@@ -116,6 +119,13 @@ public final class MakiScreen extends JavaPlugin implements Listener {
                     x = 0;
                     y++;
                 }
+
+                if (command.getName().equals("makiSetDifference")) {
+                    if (args.length != 1)
+                        sender.sendMessage("Wrong command usage!");
+                    difference = Integer.valueOf(args[0]);
+                    MultiLib.notify("maki:difference", args[0]);
+                }
             }
         }
 
@@ -123,6 +133,9 @@ public final class MakiScreen extends JavaPlugin implements Listener {
     }
 
     private void init(){
+        MultiLib.onString(this, "maki:difference", s -> {
+            difference = Integer.valueOf(s);
+        });
         playerConnectionManager = new PlayerConnectionManager();
         ConfigFile configFile = new ConfigFile(this);
         configFile.run();

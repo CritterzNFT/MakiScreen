@@ -10,6 +10,9 @@ commands:
   makiauto:
     description: Does things!
     usage: /<command>
+  makiSetDifference:
+    description: Does things!
+    usage: /<command>
 softdepend:
   - ProtocolLib
   - ProtocolSupport
