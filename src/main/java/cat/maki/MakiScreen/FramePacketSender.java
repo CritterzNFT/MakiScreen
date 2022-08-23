@@ -13,12 +13,17 @@ import org.bukkit.scheduler.BukkitRunnable;
 import java.net.http.WebSocket.Listener;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.UUID;
 
 class FramePacketSender extends BukkitRunnable implements Listener, org.bukkit.event.Listener {
     private final Queue<byte[][]> frameBuffers;
+    private long[] lastPartSendTimes = new long[0];
+    private WrapperPlayServerMapData[] cachedParts = new WrapperPlayServerMapData[0];
+    private final Map<UUID, Long> lastSendTimes = new HashMap<>();
     private final MakiScreen plugin;
 
     public FramePacketSender(MakiScreen plugin, Queue<byte[][]> frameBuffers) {
@@ -60,16 +65,24 @@ class FramePacketSender extends BukkitRunnable implements Listener, org.bukkit.e
         if (buffers == null) {
             return;
         }
-        List<WrapperPlayServerMapData> packets = new ArrayList<>(MakiScreen.screens.size());
+
+        if (lastPartSendTimes.length != buffers.length) {
+            lastPartSendTimes = new long[buffers.length];
+            cachedParts = new WrapperPlayServerMapData[buffers.length];
+        }
+
+        long time = System.currentTimeMillis();
         for (ScreenPart screenPart : MakiScreen.screens) {
             byte[] buffer = buffers[screenPart.partId];
             if (buffer != null && buffer.length > 0) {
+                lastPartSendTimes[screenPart.partId] = time;
                 WrapperPlayServerMapData packet = getPacket(screenPart.mapId, buffer);
-                if (!screenPart.modified) {
-                    packets.add(0, packet);
-                } else {
-                    packets.add(packet);
-                }
+                cachedParts[screenPart.partId] = packet;
+//                if (!screenPart.modified) {
+//                    packets.add(0, packet);
+//                } else {
+//                    packets.add(packet);
+//                }
                 screenPart.modified = true;
                 screenPart.lastFrameBuffer = buffer;
             } else {
@@ -78,6 +91,17 @@ class FramePacketSender extends BukkitRunnable implements Listener, org.bukkit.e
         }
 
         for (Player onlinePlayer : MultiLib.getLocalOnlinePlayers()) {
+            long lastTime = lastSendTimes.getOrDefault(onlinePlayer.getUniqueId(), 0L);
+            List<WrapperPlayServerMapData> packets = new ArrayList<>(MakiScreen.screens.size());
+
+            for (ScreenPart screenPart : MakiScreen.screens) {
+                if (lastPartSendTimes[screenPart.partId] > lastTime) {
+                    packets.add(cachedParts[screenPart.partId]);
+                }
+            }
+
+            lastSendTimes.put(onlinePlayer.getUniqueId(), time);
+
             sendToPlayer(onlinePlayer, packets);
         }
     }
