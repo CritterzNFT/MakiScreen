@@ -119,14 +119,14 @@ public final class MakiScreen extends JavaPlugin implements Listener {
                     x = 0;
                     y++;
                 }
-
-                if (command.getName().equals("makiSetDifference")) {
-                    if (args.length != 1)
-                        sender.sendMessage("Wrong command usage!");
-                    difference = Integer.valueOf(args[0]);
-                    MultiLib.notify("maki:difference", args[0]);
-                }
             }
+        }
+
+        if (command.getName().equals("makisetdifference")) {
+            if (args.length != 1)
+                sender.sendMessage("Wrong command usage!");
+            difference = Integer.valueOf(args[0]);
+            MultiLib.notify("maki:difference", args[0]);
         }
 
         return true;

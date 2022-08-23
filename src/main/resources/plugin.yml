@@ -10,7 +10,7 @@ commands:
   makiauto:
     description: Does things!
     usage: /<command>
-  makiSetDifference:
+  makisetdifference:
     description: Does things!
     usage: /<command>
 softdepend:
