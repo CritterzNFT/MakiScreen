@@ -215,12 +215,9 @@ class FrameProcessorTask extends BukkitRunnable {
         }
 
         double[] response = getDifference(oldBytes, bytes);
-        if (response[0] < difference){
+        if (response[0] < difference && response[1] < difference*4){
             return null;
         }
-
-        if (response[1] < difference*4)
-            return null;
 
         if (modified) {
             this.cachedMapData[partId] = bytes;
