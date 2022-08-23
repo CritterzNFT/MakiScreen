@@ -214,9 +214,13 @@ class FrameProcessorTask extends BukkitRunnable {
             }
         }
 
-        if (getDifference(oldBytes, bytes) < difference){
+        double[] response = getDifference(oldBytes, bytes);
+        if (response[0] < difference){
             return null;
         }
+
+        if (response[1] < difference*4)
+            return null;
 
         if (modified) {
             this.cachedMapData[partId] = bytes;
@@ -228,11 +232,18 @@ class FrameProcessorTask extends BukkitRunnable {
     }
 
     public static int difference = 20;
-    private double getDifference(byte[] first, byte[] second) {
+    private double[] getDifference(byte[] first, byte[] second) {
+        double[] response = new double[2];
+        double largestDifference = 0;
         double difference = 0;
         for (int i = 0; i < first.length; i++){
-            difference += Math.abs(first[i] - second[i]);
+            int change = Math.abs(first[i] - second[i]);
+            difference += change;
+            if (change > largestDifference)
+                largestDifference = change;
         }
-        return difference/first.length;
+        response[0] = difference;
+        response[1] = largestDifference;
+        return response;
     }
 }
