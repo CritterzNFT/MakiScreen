@@ -1,18 +1,24 @@
 package cat.maki.MakiScreen.connection;
 
 import cat.maki.MakiScreen.MakiScreen;
-import com.github.puregero.multilib.MultiLib;
 import com.github.retrooper.packetevents.event.PacketListener;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
+import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
+import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientKeepAlive;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPong;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerKeepAlive;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPing;
 import org.bukkit.entity.Player;
 
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
 public class KeepAlivePacketListener implements PacketListener {
+    private Map<UUID, PacketTypeCommon> packetTypeMap = new ConcurrentHashMap<>();
     @Override
     public void onPacketSend(PacketSendEvent event) {
         Object id = null;

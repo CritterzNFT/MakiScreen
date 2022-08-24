@@ -101,7 +101,9 @@ class FramePacketSender extends BukkitRunnable implements Listener, org.bukkit.e
 
             for (ScreenPart screenPart : MakiScreen.screens) {
                 if (lastPartSendTimes[screenPart.partId] > lastTime) {
-                    packets.add(cachedParts[screenPart.partId]);
+                    WrapperPlayServerMapData wrapperPlayServerMapData = new WrapperPlayServerMapData();
+                    wrapperPlayServerMapData.copy(cachedParts[screenPart.partId]);
+                    packets.add(wrapperPlayServerMapData);
                 }
             }
 

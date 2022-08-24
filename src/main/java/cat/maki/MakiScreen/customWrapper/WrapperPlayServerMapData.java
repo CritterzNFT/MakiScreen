@@ -14,7 +14,7 @@ public class WrapperPlayServerMapData extends PacketWrapper<WrapperPlayServerMap
     private int scale;
     private boolean locked;
     private Collection<MapIcon> icons;
-    private final byte[] colors;
+    private byte[] colors;
     private int x;
     private int z;
     private int width;
@@ -31,6 +31,10 @@ public class WrapperPlayServerMapData extends PacketWrapper<WrapperPlayServerMap
         this.z = z;
         this.width = width;
         this.height = height;
+    }
+
+    public WrapperPlayServerMapData() {
+        super(PacketType.Play.Server.MAP_DATA);
     }
 
     @Override
@@ -105,8 +109,15 @@ public class WrapperPlayServerMapData extends PacketWrapper<WrapperPlayServerMap
     public void copy(WrapperPlayServerMapData wrapper) {
         this.data = wrapper.data;
         this.scale = wrapper.scale;
-        this.icons = new ArrayList<>(wrapper.icons.size());
-        wrapper.icons.forEach(icon -> this.icons.add(icon.clone()));
+        this.locked = wrapper.locked;
+        if (wrapper.icons != null) {
+            this.icons = new ArrayList<>(wrapper.icons.size());
+            wrapper.icons.forEach(icon -> this.icons.add(icon.clone()));
+        } else {
+            this.icons = null;
+        }
+        this.colors = new byte[wrapper.colors.length];
+        System.arraycopy(wrapper.colors, 0, this.colors, 0, wrapper.colors.length);
         this.width = wrapper.width;
         this.height = wrapper.height;
         this.x = wrapper.x;
