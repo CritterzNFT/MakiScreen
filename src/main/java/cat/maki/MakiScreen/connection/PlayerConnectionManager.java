@@ -40,6 +40,10 @@ public class PlayerConnectionManager {
     }
 
     public void addKeepAlive(Object id, Player player) {
+        if (player == null) {
+            return;
+        }
+
         KeepAlive keepAlive = new KeepAlive(player);
         if (id instanceof Long) {
             keepAliveMap.put((long) id, keepAlive);
