@@ -8,6 +8,7 @@ import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
 import java.nio.ByteBuffer;
 import java.util.Queue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static cat.maki.MakiScreen.dither.DitherLookupUtil.COLOR_MAP;
 import static cat.maki.MakiScreen.dither.DitherLookupUtil.FULL_COLOR_MAP;
@@ -15,6 +16,7 @@ import static cat.maki.MakiScreen.dither.DitherLookupUtil.FULL_COLOR_MAP;
 class FrameProcessorTask extends BukkitRunnable {
 
     private final Object lock = new Object();
+    private final AtomicInteger threadsInLock = new AtomicInteger(0);
     private final Queue<byte[][]> frameBuffers = EvictingQueue.create(450);
     private final int mapSize;
 
@@ -142,24 +144,30 @@ class FrameProcessorTask extends BukkitRunnable {
 
     @Override
     public void run() {
-        synchronized (lock) {
-            BufferedImage frame = VideoCapture.currentFrame;
-            if (frame == null) {
-                return;
-            }
-            frameData = ((DataBufferByte) frame.getRaster().getDataBuffer()).getData();
-            ditherFrame();
+        try {
+            if (threadsInLock.getAndIncrement() < 3) {
+                synchronized (lock) {
+                    BufferedImage frame = VideoCapture.currentFrame;
+                    if (frame == null) {
+                        return;
+                    }
+                    frameData = ((DataBufferByte) frame.getRaster().getDataBuffer()).getData();
+                    ditherFrame();
 //      System.out.println("DitherTime: " + diff + "ns");
 
-            byte[][] buffers = new byte[mapSize][];
+                    byte[][] buffers = new byte[mapSize][];
 
-            for (int partId = 0; partId < buffers.length; partId++) {
-                buffers[partId] = getMapData(partId, frameWidth);
+                    for (int partId = 0; partId < buffers.length; partId++) {
+                        buffers[partId] = getMapData(partId, frameWidth);
+                    }
+
+                    frameBuffers.offer(buffers);
+
+                    notifyNewFrameBuffer(buffers);
+                }
             }
-
-            frameBuffers.offer(buffers);
-
-            notifyNewFrameBuffer(buffers);
+        } finally {
+            threadsInLock.decrementAndGet();
         }
     }
 
