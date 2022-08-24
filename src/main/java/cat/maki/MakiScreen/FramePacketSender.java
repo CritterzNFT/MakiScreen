@@ -91,6 +91,11 @@ class FramePacketSender extends BukkitRunnable implements Listener, org.bukkit.e
         }
 
         for (Player onlinePlayer : MultiLib.getLocalOnlinePlayers()) {
+            boolean shouldSend = MakiScreen.getInstance().getPlayerConnectionManager().shouldSendMapPlayer(onlinePlayer);
+            if (!shouldSend) {
+                continue;
+            }
+
             long lastTime = lastSendTimes.getOrDefault(onlinePlayer.getUniqueId(), 0L);
             List<WrapperPlayServerMapData> packets = new ArrayList<>(MakiScreen.screens.size());
 
@@ -118,10 +123,6 @@ class FramePacketSender extends BukkitRunnable implements Listener, org.bukkit.e
     }
 
     private void sendToPlayer(Player player, List<WrapperPlayServerMapData> packets) {
-        boolean shouldSend = MakiScreen.getInstance().getPlayerConnectionManager().shouldSendMapPlayer(player);
-        if (!shouldSend) {
-            return;
-        }
         for (WrapperPlayServerMapData packet : packets) {
             if (packet != null) {
                 PacketEvents.getAPI().getPlayerManager().sendPacket(player, packet);
