@@ -30,8 +30,8 @@ public class PlayerConnectionManager {
     private final Map<UUID, Integer> sendCount = new ConcurrentHashMap<>();
 
     public void addPlayer(Player player) {
-        playerPings.put(player.getUniqueId(), 0L);
-        playerStability.put(player.getUniqueId(), 1D);
+//        playerPings.put(player.getUniqueId(), 0L);
+//        playerStability.put(player.getUniqueId(), 1D);
     }
 
     public void removePlayer(Player player) {
@@ -69,13 +69,13 @@ public class PlayerConnectionManager {
     }
 
     private void updatePlayerPing(UUID uuid, long currentPing) {
-        Long oldPing = playerPings.get(uuid);
+        Long oldPing = playerPings.getOrDefault(uuid, 0L);
         playerPings.put(uuid, currentPing);
         if (oldPing == null)
             return;
         if (oldPing == 0L)
             return;
-        double stability = playerStability.get(uuid);
+        double stability = playerStability.getOrDefault(uuid, 1D);
         int difference = (int) stability/10;
         if (difference == 0)
             difference = 1;
