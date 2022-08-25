@@ -22,7 +22,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class KeepAlivePacketListener implements PacketListener {
     private Map<UUID, PacketTypeCommon> packetTypeMap = new ConcurrentHashMap<>();
-    private Map<Integer, Integer> mapIdToEntityID = new ConcurrentHashMap<>();
     @Override
     public void onPacketSend(PacketSendEvent event) {
         if (event.getPacketType() == PacketType.Play.Server.ENTITY_METADATA) {
@@ -30,7 +29,7 @@ public class KeepAlivePacketListener implements PacketListener {
             int entityId = wrapperPlayServerEntityMetadata.getEntityId();
             wrapperPlayServerEntityMetadata.getEntityMetadata().forEach(metadata -> {
                 if (metadata.getType().getName().contains("itemstack") && metadata.getIndex() == 8 && ((ItemStack) metadata.getValue()).getType() == ItemTypes.FILLED_MAP) {
-                    mapIdToEntityID.put(((NBTInt)(((ItemStack) metadata.getValue()).getNBT().getTagOrThrow("map"))).getAsInt(), entityId);
+                    MakiScreen.getInstance().getPlayerConnectionManager().mapIdToEntityID.put(((NBTInt)(((ItemStack) metadata.getValue()).getNBT().getTagOrThrow("map"))).getAsInt(), entityId);
                 }
             });
         }

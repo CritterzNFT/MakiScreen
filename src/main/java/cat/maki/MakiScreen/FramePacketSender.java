@@ -118,7 +118,8 @@ class FramePacketSender extends BukkitRunnable implements Listener, org.bukkit.e
                             int originalMapId = wrapperPlayServerMapData.mapId;
                             wrapperPlayServerMapData.mapId += mapBufferIndex;
                             packets.add(wrapperPlayServerMapData);
-                            postPackets.add(getPacketToSetMapIdTo(originalMapId, wrapperPlayServerMapData.mapId)); // TODO
+                            int entityId = MakiScreen.getInstance().getPlayerConnectionManager().mapIdToEntityID.get(originalMapId);
+                            postPackets.add(MakiScreen.getInstance().getPlayerConnectionManager().createSetItemFrameMapPacket(entityId, wrapperPlayServerMapData.mapId)); // TODO
                         }
                     }
 
@@ -164,7 +165,7 @@ class FramePacketSender extends BukkitRunnable implements Listener, org.bukkit.e
         if (player != null) {
             MakiScreen.getInstance().getPlayerConnectionManager().addPlayer(player);
             Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, () -> {
-                List<WrapperPlayServerMapData> packets = new ArrayList<>();
+                List<PacketWrapper<?>> packets = new ArrayList<>();
                 for (ScreenPart screenPart : MakiScreen.screens) {
                     if (screenPart.lastFrameBuffer != null) {
                         packets.add(getPacket(screenPart.mapId, screenPart.lastFrameBuffer));

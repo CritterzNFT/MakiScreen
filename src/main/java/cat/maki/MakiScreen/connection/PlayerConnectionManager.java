@@ -37,6 +37,7 @@ public class PlayerConnectionManager {
     private final Map<Long, KeepAlive> keepAliveMap = new ConcurrentHashMap<>();
     private final Map<Integer, KeepAlive> pingMap = new ConcurrentHashMap<>();
     private final Map<UUID, Integer> sendCount = new ConcurrentHashMap<>();
+    public final Map<Integer, Integer> mapIdToEntityID = new ConcurrentHashMap<>();
 
     public void addPlayer(Player player) {
 //        playerPings.put(player.getUniqueId(), 0L);
@@ -120,7 +121,7 @@ public class PlayerConnectionManager {
         return Math.abs(Math.abs(currentPing) - Math.abs(oldPing)) < difference;
     }
 
-    public void sendMap(Player player, int entityId, int mapId) {
+    public WrapperPlayServerEntityMetadata createSetItemFrameMapPacket(int entityId, int mapId) {
         NBTInt nbtInt = new NBTInt(mapId);
         NBTCompound nbtCompound = new NBTCompound();
         nbtCompound.setTag("map", nbtInt);
@@ -133,7 +134,6 @@ public class PlayerConnectionManager {
         List<EntityData> entityDataList = new ArrayList<>();
         EntityData entityData = new EntityData(8, EntityDataTypes.ITEMSTACK, itemstack);
         entityDataList.add(entityData);
-        WrapperPlayServerEntityMetadata wrapperPlayServerEntityMetadata = new WrapperPlayServerEntityMetadata(entityId, entityDataList);
-        PacketEvents.getAPI().getPlayerManager().sendPacket(player, wrapperPlayServerEntityMetadata);
+        return new WrapperPlayServerEntityMetadata(entityId, entityDataList);
     }
 }
