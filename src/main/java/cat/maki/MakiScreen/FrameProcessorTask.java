@@ -48,52 +48,56 @@ class FrameProcessorTask extends BukkitRunnable {
         //   | -> -> -> ->
         //   | -> -> -> ->
 
-        r = new int[mapSize * 128 * 128];
-        g = new int[mapSize * 128 * 128];
-        b = new int[mapSize * 128 * 128];
+        int[] ditherBuffer = new int[frameData.length];
+
         int width = this.frameWidth;
         int height = this.ditheredFrameData.length / width;
         for (int y = 0; y < height; y++) {
-            int yIndex = y * width;
             for (int x = 0; x < width; x++) {
-                int pos = (y * 3 * width) + (x * 3);
-                int rgb = -16777216;
-                int blue = ((int) frameData[pos++] & 0xff);
-                int green = (((int) frameData[pos++] & 0xff));
-                int red = (((int) frameData[pos] & 0xff));
+                int pos = pos(x, y, width);
+                int rgb = 0;
+
+                int blue = (int) frameData[pos] & 0xFF;
+                int green = (int) frameData[pos + 1] & 0xFF;
+                int red = (int) frameData[pos + 2] & 0xFF;
+
+                red = (int) Math.max(Math.min(255, red + ditherBuffer[pos]), 0);
+                green = (int) Math.max(Math.min(255, green + ditherBuffer[pos + 1]), 0);
+                blue = (int) Math.max(Math.min(255, blue + ditherBuffer[pos + 2]), 0);
+
                 rgb |= blue;
                 rgb |= green << 8;
                 rgb |= red << 16;
-                ditheredFrameData[yIndex + x] = getColor(rgb);
+
+                ditheredFrameData[y * width + x] = getColor(rgb);
+
                 int newRgb = getBestFullColor(red, green, blue);
-                int newBlue = newRgb & 0xff;
-                int newGreen = (newRgb >> 8) & 0xff;
-                int newRed = (newRgb >> 16) & 0xff;
-                int differenceR = newRed - red;
-                int differenceG = newGreen - green;
-                int differenceB = newBlue - blue;
+
                 if (x != width - 1) {
-                    frameData[(yIndex + x + 1) * 3] = addNoOverflow(frameData[(yIndex + x + 1) * 3], differenceB * (7.0/16));
-                    frameData[(yIndex + x + 1) * 3 + 1] = addNoOverflow(frameData[(yIndex + x + 1) * 3 + 1], differenceG * (7.0/16));
-                    frameData[(yIndex + x + 1) * 3 + 2] = addNoOverflow(frameData[(yIndex + x + 1) * 3 + 2], differenceR * (7.0/16));
+                    dither(ditherBuffer, pos(x + 1, y, width), rgb, newRgb, 7.0 / 16);
                     if (y != height - 1){
-                        frameData[(((y+1) * width) + x + 1) * 3] = addNoOverflow(frameData[(((y+1) * width) + x + 1) * 3], differenceB * (1.0/16));
-                        frameData[(((y+1) * width) + x + 1) * 3 + 1] = addNoOverflow(frameData[(((y+1) * width) + x + 1) * 3 + 1], differenceG * (1.0/16));
-                        frameData[(((y+1) * width) + x + 1) * 3 + 2] = addNoOverflow(frameData[(((y+1) * width) + x + 1) * 3 + 2], differenceR * (1.0/16));
+                        dither(ditherBuffer, pos(x + 1, y + 1, width), rgb, newRgb, 1.0 / 16);
                     }
                 }
                 if (y != height - 1){
-                    frameData[(((y+1) * width) + x) * 3] = addNoOverflow(frameData[(((y+1) * width) + x) * 3], differenceB * (5.0/16));
-                    frameData[(((y+1) * width) + x) * 3 + 1] = addNoOverflow(frameData[(((y+1) * width) + x) * 3 + 1], differenceG * (5.0/16));
-                    frameData[(((y+1) * width) + x) * 3 + 2] = addNoOverflow(frameData[(((y+1) * width) + x) * 3 + 2], differenceR * (5.0/16));
+                    dither(ditherBuffer, pos(x, y + 1, width), rgb, newRgb, 5.0 / 16);
                     if (x != 0) {
-                        frameData[(((y+1) * width) + x - 1) * 3] = addNoOverflow(frameData[(((y+1) * width) + x - 1) * 3], differenceB * (3.0/16));
-                        frameData[(((y+1) * width) + x - 1) * 3 + 1] = addNoOverflow(frameData[(((y+1) * width) + x - 1) * 3 + 1], differenceG * (3.0/16));
-                        frameData[(((y+1) * width) + x - 1) * 3 + 2] = addNoOverflow(frameData[(((y+1) * width) + x - 1) * 3 + 2], differenceR * (3.0/16));
+                        dither(ditherBuffer, pos(x - 1, y + 1, width), rgb, newRgb, 3.0 / 16);
                     }
                 }
             }
         }
+    }
+
+    private void dither(int[] ditherBuffer, int pos, int rgb, int newRgb, double scalar) {
+        int blueDiff = (rgb & 0xFF) - (newRgb & 0xFF);
+        int greenDiff = ((rgb >> 8) & 0xFF) - ((newRgb >> 8) & 0xFF);
+        int redDiff = ((rgb >> 16) & 0xFF) - ((newRgb >> 16) & 0xFF);
+
+        ditherBuffer[pos] += blueDiff * scalar;
+        ditherBuffer[pos + 1] += greenDiff * scalar;
+        ditherBuffer[pos + 2] += redDiff * scalar;
+
     }
 
     private byte addNoOverflow(byte theByte, double v) {
