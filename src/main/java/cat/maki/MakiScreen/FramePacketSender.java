@@ -90,6 +90,7 @@ class FramePacketSender extends BukkitRunnable implements Listener, org.bukkit.e
             }
         }
 
+
         for (Player onlinePlayer : MultiLib.getLocalOnlinePlayers()) {
             boolean shouldSend = MakiScreen.getInstance().getPlayerConnectionManager().shouldSendMapPlayer(onlinePlayer);
             if (!shouldSend) {

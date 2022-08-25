@@ -38,129 +38,177 @@ class FrameProcessorTask extends BukkitRunnable {
         return frameBuffers;
     }
 
+    private int[] r;
+    private int[] g;
+    private int[] b;
     private void dontDitherFrame() {
-        int width = this.frameWidth;
-        int height = this.ditheredFrameData.length / width;
-
         //   |  Y
         // X | -> -> -> ->
-        //   | <- <- <- <-
         //   | -> -> -> ->
-        //   | <- <- <- <-
+        //   | -> -> -> ->
+        //   | -> -> -> ->
+
+        r = new int[mapSize * 128 * 128];
+        g = new int[mapSize * 128 * 128];
+        b = new int[mapSize * 128 * 128];
+        int width = this.frameWidth;
+        int height = this.ditheredFrameData.length / width;
         for (int y = 0; y < height; y++) {
             int yIndex = y * width;
-            for (int x = 0; x < width; ++x) {
+            for (int x = 0; x < width; x++) {
                 int pos = (y * 3 * width) + (x * 3);
                 int rgb = -16777216;
-                rgb += ((int) frameData[pos++] & 0xff);
-                rgb += (((int) frameData[pos++] & 0xff) << 8);
-                rgb += (((int) frameData[pos] & 0xff) << 16);
+                int blue = ((int) frameData[pos++] & 0xff);
+                int green = (((int) frameData[pos++] & 0xff));
+                int red = (((int) frameData[pos] & 0xff));
+                rgb |= blue;
+                rgb |= green << 8;
+                rgb |= red << 16;
                 ditheredFrameData[yIndex + x] = getColor(rgb);
-            }
-        }
-    }
-
-    private void ditherFrame() {
-        int width = this.frameWidth;
-        int height = this.ditheredFrameData.length / width;
-        int widthMinus = width - 1;
-        int heightMinus = height - 1;
-
-        //   |  Y
-        // X | -> -> -> ->
-        //   | <- <- <- <-
-        //   | -> -> -> ->
-        //   | <- <- <- <-
-        for (int y = 0; y < height; y++) {
-            boolean hasNextY = y < heightMinus;
-            int yIndex = y * width;
-            if ((y & 0x1) == 0) { // Forward
-                int bufferIndex = 0;
-                final int[] buf1 = ditherBuffer[0];
-                final int[] buf2 = ditherBuffer[1];
-
-                for (int x = 0; x < width; ++x) {
-                    int pos = pos(x, y, width);
-                    int blue = (int) frameData[pos++] & 0xff;
-                    int green = ((int) frameData[pos++] & 0xff);
-                    int red = ((int) frameData[pos] & 0xff);
-
-                    red = Math.max(Math.min(255, red + buf1[bufferIndex++]), 0);
-                    green = Math.max(Math.min(255, green + buf1[bufferIndex++]), 0);
-                    blue = Math.max(Math.min(255, blue + buf1[bufferIndex++]), 0);
-
-                    final int closest = getBestFullColor(red, green, blue);
-                    final int delta_r = red - (closest >> 16 & 0xFF);
-                    final int delta_g = green - (closest >> 8 & 0xFF);
-                    final int delta_b = blue - (closest & 0xFF);
-
-                    if (x < widthMinus) {
-                        buf1[bufferIndex] = delta_r >> 1;
-                        buf1[bufferIndex + 1] = delta_g >> 1;
-                        buf1[bufferIndex + 2] = delta_b >> 1;
+                int newRgb = getBestFullColor(red, green, blue);
+                int newBlue = newRgb & 0xff;
+                int newGreen = (newRgb >> 8) & 0xff;
+                int newRed = (newRgb >> 16) & 0xff;
+                int differenceR = newRed - red;
+                int differenceG = newGreen - green;
+                int differenceB = newBlue - blue;
+                if (x != width - 1) {
+                    frameData[(yIndex + x + 1) * 3] = addNoOverflow(frameData[(yIndex + x + 1) * 3], differenceB * (7.0/16));
+                    frameData[(yIndex + x + 1) * 3 + 1] = addNoOverflow(frameData[(yIndex + x + 1) * 3 + 1], differenceG * (7.0/16));
+                    frameData[(yIndex + x + 1) * 3 + 2] = addNoOverflow(frameData[(yIndex + x + 1) * 3 + 2], differenceR * (7.0/16));
+                    if (y != height - 1){
+                        frameData[(((y+1) * width) + x + 1) * 3] = addNoOverflow(frameData[(((y+1) * width) + x + 1) * 3], differenceB * (1.0/16));
+                        frameData[(((y+1) * width) + x + 1) * 3 + 1] = addNoOverflow(frameData[(((y+1) * width) + x + 1) * 3 + 1], differenceG * (1.0/16));
+                        frameData[(((y+1) * width) + x + 1) * 3 + 2] = addNoOverflow(frameData[(((y+1) * width) + x + 1) * 3 + 2], differenceR * (1.0/16));
                     }
-                    if (hasNextY) {
-                        if (x > 0) {
-                            buf2[bufferIndex - 6] = delta_r >> 2;
-                            buf2[bufferIndex - 5] = delta_g >> 2;
-                            buf2[bufferIndex - 4] = delta_b >> 2;
-                        }
-                        buf2[bufferIndex - 3] = delta_r >> 2;
-                        buf2[bufferIndex - 2] = delta_g >> 2;
-                        buf2[bufferIndex - 1] = delta_b >> 2;
-                    }
-                    ditheredFrameData[yIndex + x] = getColor(closest);
                 }
-            } else { // Backward
-                int bufferIndex = width + (width << 1) - 1;
-                final int[] buf1 = ditherBuffer[1];
-                final int[] buf2 = ditherBuffer[0];
-                for (int x = width - 1; x >= 0; --x) {
-                    int pos = pos(x, y, width);
-                    int blue = (int) frameData[pos++] & 0xff;
-                    int green = ((int) frameData[pos++] & 0xff);
-                    int red = ((int) frameData[pos] & 0xff);
-
-                    red = Math.max(Math.min(255, red + buf1[bufferIndex--]), 0);
-                    green = Math.max(Math.min(255, green + buf1[bufferIndex--]), 0);
-                    blue = Math.max(Math.min(255, blue + buf1[bufferIndex--]), 0);
-
-                    int closest = getBestFullColor(red, green, blue);
-                    int delta_r = red - (closest >> 16 & 0xFF);
-                    int delta_g = green - (closest >> 8 & 0xFF);
-                    int delta_b = blue - (closest & 0xFF);
-
-                    if (x > 0) {
-                        buf1[bufferIndex] = delta_b >> 1;
-                        buf1[bufferIndex - 1] = delta_g >> 1;
-                        buf1[bufferIndex - 2] = delta_r >> 1;
+                if (y != height - 1){
+                    frameData[(((y+1) * width) + x) * 3] = addNoOverflow(frameData[(((y+1) * width) + x) * 3], differenceB * (5.0/16));
+                    frameData[(((y+1) * width) + x) * 3 + 1] = addNoOverflow(frameData[(((y+1) * width) + x) * 3 + 1], differenceG * (5.0/16));
+                    frameData[(((y+1) * width) + x) * 3 + 2] = addNoOverflow(frameData[(((y+1) * width) + x) * 3 + 2], differenceR * (5.0/16));
+                    if (x != 0) {
+                        frameData[(((y+1) * width) + x - 1) * 3] = addNoOverflow(frameData[(((y+1) * width) + x - 1) * 3], differenceB * (3.0/16));
+                        frameData[(((y+1) * width) + x - 1) * 3 + 1] = addNoOverflow(frameData[(((y+1) * width) + x - 1) * 3 + 1], differenceG * (3.0/16));
+                        frameData[(((y+1) * width) + x - 1) * 3 + 2] = addNoOverflow(frameData[(((y+1) * width) + x - 1) * 3 + 2], differenceR * (3.0/16));
                     }
-                    if (hasNextY) {
-                        if (x < widthMinus) {
-                            buf2[bufferIndex + 6] = delta_b >> 2;
-                            buf2[bufferIndex + 5] = delta_g >> 2;
-                            buf2[bufferIndex + 4] = delta_r >> 2;
-                        }
-                        buf2[bufferIndex + 3] = delta_b >> 2;
-                        buf2[bufferIndex + 2] = delta_g >> 2;
-                        buf2[bufferIndex + 1] = delta_r >> 2;
-                    }
-                    ditheredFrameData[yIndex + x] = getColor(closest);
                 }
             }
         }
     }
+
+    private byte addNoOverflow(byte theByte, double v) {
+        int theInt = (int) Math.round(v);
+        if (theInt + (int) theByte >= Byte.MAX_VALUE) {
+            return Byte.MAX_VALUE;
+        } else if (theInt + (int) theByte <= Byte.MIN_VALUE) {
+            return Byte.MIN_VALUE;
+        } else {
+            return (byte) (theInt + (int) theByte);
+        }
+    }
+
+//    private void ditherFrame() {
+//        int width = this.frameWidth;
+//        int height = this.ditheredFrameData.length / width;
+//        int widthMinus = width - 1;
+//        int heightMinus = height - 1;
+//
+//        //   |  Y
+//        // X | -> -> -> ->
+//        //   | <- <- <- <-
+//        //   | -> -> -> ->
+//        //   | <- <- <- <-
+//        for (int y = 0; y < height; y++) {
+//            boolean hasNextY = y < heightMinus;
+//            int yIndex = y * width;
+//            if ((y & 0x1) == 0) { // Forward
+//                int bufferIndex = 0;
+//                final int[] buf1 = ditherBuffer[0];
+//                final int[] buf2 = ditherBuffer[1];
+//
+//                for (int x = 0; x < width; ++x) {
+//                    int pos = pos(x, y, width);
+//                    int blue = (int) frameData[pos++] & 0xff;
+//                    int green = ((int) frameData[pos++] & 0xff);
+//                    int red = ((int) frameData[pos] & 0xff);
+//
+//                    red = Math.max(Math.min(255, red + buf1[bufferIndex++]), 0);
+//                    green = Math.max(Math.min(255, green + buf1[bufferIndex++]), 0);
+//                    blue = Math.max(Math.min(255, blue + buf1[bufferIndex++]), 0);
+//
+//                    final int closest = getBestFullColor(red, green, blue);
+//                    final int delta_r = red - (closest >> 16 & 0xFF);
+//                    final int delta_g = green - (closest >> 8 & 0xFF);
+//                    final int delta_b = blue - (closest & 0xFF);
+//
+//                    if (x < widthMinus) {
+//                        buf1[bufferIndex] = delta_r >> 1;
+//                        buf1[bufferIndex + 1] = delta_g >> 1;
+//                        buf1[bufferIndex + 2] = delta_b >> 1;
+//                    }
+//                    if (hasNextY) {
+//                        if (x > 0) {
+//                            buf2[bufferIndex - 6] = delta_r >> 2;
+//                            buf2[bufferIndex - 5] = delta_g >> 2;
+//                            buf2[bufferIndex - 4] = delta_b >> 2;
+//                        }
+//                        buf2[bufferIndex - 3] = delta_r >> 2;
+//                        buf2[bufferIndex - 2] = delta_g >> 2;
+//                        buf2[bufferIndex - 1] = delta_b >> 2;
+//                    }
+//                    ditheredFrameData[yIndex + x] = getColor(closest);
+//                }
+//            } else { // Backward
+//                int bufferIndex = width + (width << 1) - 1;
+//                final int[] buf1 = ditherBuffer[1];
+//                final int[] buf2 = ditherBuffer[0];
+//                for (int x = width - 1; x >= 0; --x) {
+//                    int pos = pos(x, y, width);
+//                    int blue = (int) frameData[pos++] & 0xff;
+//                    int green = ((int) frameData[pos++] & 0xff);
+//                    int red = ((int) frameData[pos] & 0xff);
+//
+//                    red = Math.max(Math.min(255, red + buf1[bufferIndex--]), 0);
+//                    green = Math.max(Math.min(255, green + buf1[bufferIndex--]), 0);
+//                    blue = Math.max(Math.min(255, blue + buf1[bufferIndex--]), 0);
+//
+//                    int closest = getBestFullColor(red, green, blue);
+//                    int delta_r = red - (closest >> 16 & 0xFF);
+//                    int delta_g = green - (closest >> 8 & 0xFF);
+//                    int delta_b = blue - (closest & 0xFF);
+//
+//                    if (x > 0) {
+//                        buf1[bufferIndex] = delta_b >> 1;
+//                        buf1[bufferIndex - 1] = delta_g >> 1;
+//                        buf1[bufferIndex - 2] = delta_r >> 1;
+//                    }
+//                    if (hasNextY) {
+//                        if (x < widthMinus) {
+//                            buf2[bufferIndex + 6] = delta_b >> 2;
+//                            buf2[bufferIndex + 5] = delta_g >> 2;
+//                            buf2[bufferIndex + 4] = delta_r >> 2;
+//                        }
+//                        buf2[bufferIndex + 3] = delta_b >> 2;
+//                        buf2[bufferIndex + 2] = delta_g >> 2;
+//                        buf2[bufferIndex + 1] = delta_r >> 2;
+//                    }
+//                    ditheredFrameData[yIndex + x] = getColor(closest);
+//                }
+//            }
+//        }
+//    }
 
     private static int pos(int x, int y, int width) {
         return (y * 3 * width) + (x * 3);
     }
 
-    private static byte getColor(int rgb) {
-        return COLOR_MAP[(rgb >> 16 & 0xFF) >> 1 << 14 | (rgb >> 8 & 0xFF) >> 1 << 7
+    private byte getColor(int rgb) {
+        byte result = COLOR_MAP[(rgb >> 16 & 0xFF) >> 1 << 14 | (rgb >> 8 & 0xFF) >> 1 << 7
                 | (rgb & 0xFF) >> 1];
+        return result;
     }
 
-    private static int getBestFullColor(final int red, final int green, final int blue) {
+    private int getBestFullColor(final int red, final int green, final int blue) {
         return FULL_COLOR_MAP[red >> 1 << 14 | green >> 1 << 7 | blue >> 1];
     }
 
