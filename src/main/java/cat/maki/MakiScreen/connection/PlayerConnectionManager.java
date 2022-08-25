@@ -4,9 +4,18 @@ import cat.maki.MakiScreen.MakiScreen;
 import com.github.puregero.multilib.MultiLib;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListenerPriority;
+import com.github.retrooper.packetevents.protocol.entity.data.EntityData;
+import com.github.retrooper.packetevents.protocol.entity.data.EntityDataTypes;
+import com.github.retrooper.packetevents.protocol.item.ItemStack;
+import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
+import com.github.retrooper.packetevents.protocol.nbt.NBTCompound;
+import com.github.retrooper.packetevents.protocol.nbt.NBTInt;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityMetadata;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -109,5 +118,22 @@ public class PlayerConnectionManager {
 
     private boolean isNear(long currentPing, long oldPing, int difference) {
         return Math.abs(Math.abs(currentPing) - Math.abs(oldPing)) < difference;
+    }
+
+    public void sendMap(Player player, int entityId, int mapId) {
+        NBTInt nbtInt = new NBTInt(mapId);
+        NBTCompound nbtCompound = new NBTCompound();
+        nbtCompound.setTag("map", nbtInt);
+        ItemStack.Builder builder = new ItemStack.Builder();
+        builder.type(ItemTypes.FILLED_MAP);
+        builder.amount(1);
+        builder.nbt(nbtCompound);
+        builder.legacyData(-1);
+        ItemStack itemstack = builder.build();
+        List<EntityData> entityDataList = new ArrayList<>();
+        EntityData entityData = new EntityData(8, EntityDataTypes.ITEMSTACK, itemstack);
+        entityDataList.add(entityData);
+        WrapperPlayServerEntityMetadata wrapperPlayServerEntityMetadata = new WrapperPlayServerEntityMetadata(entityId, entityDataList);
+        PacketEvents.getAPI().getPlayerManager().sendPacket(player, wrapperPlayServerEntityMetadata);
     }
 }
