@@ -4,7 +4,6 @@ import cat.maki.MakiScreen.connection.PlayerConnectionManager;
 import com.github.puregero.multilib.MultiLib;
 import com.github.retrooper.packetevents.PacketEvents;
 import io.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder;
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.BlockFace;
@@ -30,6 +29,8 @@ import static cat.maki.MakiScreen.FrameProcessorTask.difference;
 public final class MakiScreen extends JavaPlugin implements Listener {
 
     private final Logger logger = getLogger();
+
+    public static final int BUFFER_MAP_COUNT = 11; // Odd number
 
     public static final Set<ScreenPart> screens = new TreeSet<>(
             Comparator.comparingInt(to -> to.mapId));
@@ -84,6 +85,8 @@ public final class MakiScreen extends JavaPlugin implements Listener {
                 // Create new map if none exists
                 if (mapView == null) {
                     mapView = getServer().createMap(player.getWorld());
+                    for (int j = 0; j < BUFFER_MAP_COUNT - 1; j++)
+                        getServer().createMap(player.getWorld()); // Create extra buffer maps
                     screens.add(new ScreenPart(mapView.getId(), i));
                 }
 

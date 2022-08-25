@@ -3,6 +3,8 @@ package cat.maki.MakiScreen;
 import cat.maki.MakiScreen.customWrapper.WrapperPlayServerMapData;
 import com.github.puregero.multilib.MultiLib;
 import com.github.retrooper.packetevents.PacketEvents;
+import com.github.retrooper.packetevents.wrapper.PacketWrapper;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityMetadata;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -26,6 +28,7 @@ class FramePacketSender extends BukkitRunnable implements Listener, org.bukkit.e
     private WrapperPlayServerMapData[] cachedParts = new WrapperPlayServerMapData[0];
     private final Map<UUID, Long> lastSendTimes = new HashMap<>();
     private final MakiScreen plugin;
+    private int mapBufferIndex = 0;
 
     public FramePacketSender(MakiScreen plugin, Queue<byte[][]> frameBuffers) {
         this.frameBuffers = frameBuffers;
@@ -96,6 +99,7 @@ class FramePacketSender extends BukkitRunnable implements Listener, org.bukkit.e
                     }
                 }
 
+                mapBufferIndex = (++mapBufferIndex) % MakiScreen.BUFFER_MAP_COUNT;
 
                 for (Player onlinePlayer : MultiLib.getLocalOnlinePlayers()) {
                     boolean shouldSend = MakiScreen.getInstance().getPlayerConnectionManager().shouldSendMapPlayer(onlinePlayer);
@@ -104,19 +108,24 @@ class FramePacketSender extends BukkitRunnable implements Listener, org.bukkit.e
                     }
 
                     long lastTime = lastSendTimes.getOrDefault(onlinePlayer.getUniqueId(), 0L);
-                    List<WrapperPlayServerMapData> packets = new ArrayList<>(MakiScreen.screens.size());
+                    List<PacketWrapper<?>> packets = new ArrayList<>(MakiScreen.screens.size());
+                    List<PacketWrapper<?>> postPackets = new ArrayList<>(MakiScreen.screens.size());
 
                     for (ScreenPart screenPart : MakiScreen.screens) {
                         if (lastPartSendTimes[screenPart.partId] > lastTime) {
                             WrapperPlayServerMapData wrapperPlayServerMapData = new WrapperPlayServerMapData();
                             wrapperPlayServerMapData.copy(cachedParts[screenPart.partId]);
+                            int originalMapId = wrapperPlayServerMapData.mapId;
+                            wrapperPlayServerMapData.mapId += mapBufferIndex;
                             packets.add(wrapperPlayServerMapData);
+                            postPackets.add(getPacketToSetMapIdTo(originalMapId, wrapperPlayServerMapData.mapId)); // TODO
                         }
                     }
 
                     lastSendTimes.put(onlinePlayer.getUniqueId(), time);
 
                     sendToPlayer(onlinePlayer, packets);
+                    sendToPlayer(onlinePlayer, postPackets);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -135,8 +144,8 @@ class FramePacketSender extends BukkitRunnable implements Listener, org.bukkit.e
         playerLeave(player);
     }
 
-    private void sendToPlayer(Player player, List<WrapperPlayServerMapData> packets) {
-        for (WrapperPlayServerMapData packet : packets) {
+    private void sendToPlayer(Player player, List<PacketWrapper<?>> packets) {
+        for (PacketWrapper<?> packet : packets) {
             if (packet != null) {
                 PacketEvents.getAPI().getPlayerManager().sendPacket(player, packet);
             }

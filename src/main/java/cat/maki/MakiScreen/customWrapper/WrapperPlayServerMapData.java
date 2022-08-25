@@ -10,7 +10,7 @@ import java.util.Collection;
 
 public class WrapperPlayServerMapData extends PacketWrapper<WrapperPlayServerMapData> {
 
-    private int data;
+    public int mapId;
     private int scale;
     private boolean locked;
     private Collection<MapIcon> icons;
@@ -22,7 +22,7 @@ public class WrapperPlayServerMapData extends PacketWrapper<WrapperPlayServerMap
 
     public WrapperPlayServerMapData(int data, int scale, boolean locked, @Nullable Collection<MapIcon> icons, byte[] colors, int x, int z, int width, int height) {
         super(PacketType.Play.Server.MAP_DATA);
-        this.data = data;
+        this.mapId = data;
         this.scale = scale;
         this.locked = locked;
         this.icons = icons;
@@ -39,7 +39,7 @@ public class WrapperPlayServerMapData extends PacketWrapper<WrapperPlayServerMap
 
     @Override
     public void read() {
-        this.data = this.readVarInt();
+        this.mapId = this.readVarInt();
         this.scale = this.readByte();
 
         boolean readIcons = true;
@@ -72,7 +72,7 @@ public class WrapperPlayServerMapData extends PacketWrapper<WrapperPlayServerMap
 
     @Override
     public void write() {
-        this.writeVarInt(this.data);
+        this.writeVarInt(this.mapId);
         this.writeByte(this.scale);
 
         boolean writeIcons = true;
@@ -107,7 +107,7 @@ public class WrapperPlayServerMapData extends PacketWrapper<WrapperPlayServerMap
 
     @Override
     public void copy(WrapperPlayServerMapData wrapper) {
-        this.data = wrapper.data;
+        this.mapId = wrapper.mapId;
         this.scale = wrapper.scale;
         this.locked = wrapper.locked;
         if (wrapper.icons != null) {
