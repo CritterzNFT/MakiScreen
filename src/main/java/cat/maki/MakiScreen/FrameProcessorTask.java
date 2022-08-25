@@ -38,6 +38,28 @@ class FrameProcessorTask extends BukkitRunnable {
         return frameBuffers;
     }
 
+    private void dontDitherFrame() {
+        int width = this.frameWidth;
+        int height = this.ditheredFrameData.length / width;
+
+        //   |  Y
+        // X | -> -> -> ->
+        //   | <- <- <- <-
+        //   | -> -> -> ->
+        //   | <- <- <- <-
+        for (int y = 0; y < height; y++) {
+            int yIndex = y * width;
+            for (int x = 0; x < width; ++x) {
+                int pos = (y * 3 * width) + (x * 3);
+                int rgb = -16777216;
+                rgb += ((int) frameData[pos++] & 0xff);
+                rgb += (((int) frameData[pos++] & 0xff) << 8);
+                rgb += (((int) frameData[pos] & 0xff) << 16);
+                ditheredFrameData[yIndex + x] = getColor(rgb);
+            }
+        }
+    }
+
     private void ditherFrame() {
         int width = this.frameWidth;
         int height = this.ditheredFrameData.length / width;
@@ -152,7 +174,7 @@ class FrameProcessorTask extends BukkitRunnable {
                         return;
                     }
                     frameData = ((DataBufferByte) frame.getRaster().getDataBuffer()).getData();
-                    ditherFrame();
+                    dontDitherFrame();
 //      System.out.println("DitherTime: " + diff + "ns");
 
                     byte[][] buffers = new byte[mapSize][];
