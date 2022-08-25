@@ -10,6 +10,7 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 
+import java.awt.image.BufferedImage;
 import java.net.http.WebSocket.Listener;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -50,67 +51,76 @@ class FramePacketSender extends BukkitRunnable implements Listener, org.bukkit.e
                 frameBuffer[i] = new byte[length];
                 buffer.get(frameBuffer[i]);
             }
-            this.frameBuffers.offer(frameBuffer);
+
+            synchronized (frameBuffers) {
+                frameBuffers.offer(frameBuffer);
+                frameBuffers.notify();
+            }
         });
     }
 
     @Override
     public void run() {
-        // Skip some frames if we're running behind
-        while (frameBuffers.size() > 3) {
-            frameBuffers.poll();
-        }
-
-        byte[][] buffers = frameBuffers.poll();
-        if (buffers == null) {
-            return;
-        }
-
-        if (lastPartSendTimes.length != buffers.length) {
-            lastPartSendTimes = new long[buffers.length];
-            cachedParts = new WrapperPlayServerMapData[buffers.length];
-        }
-
-        long time = System.currentTimeMillis();
-        for (ScreenPart screenPart : MakiScreen.screens) {
-            byte[] buffer = buffers[screenPart.partId];
-            if (buffer != null && buffer.length > 0) {
-                lastPartSendTimes[screenPart.partId] = time;
-                WrapperPlayServerMapData packet = getPacket(screenPart.mapId, buffer);
-                cachedParts[screenPart.partId] = packet;
-//                if (!screenPart.modified) {
-//                    packets.add(0, packet);
-//                } else {
-//                    packets.add(packet);
-//                }
-                screenPart.modified = true;
-                screenPart.lastFrameBuffer = buffer;
-            } else {
-                screenPart.modified = false;
-            }
-        }
-
-
-        for (Player onlinePlayer : MultiLib.getLocalOnlinePlayers()) {
-            boolean shouldSend = MakiScreen.getInstance().getPlayerConnectionManager().shouldSendMapPlayer(onlinePlayer);
-            if (!shouldSend) {
-                continue;
-            }
-
-            long lastTime = lastSendTimes.getOrDefault(onlinePlayer.getUniqueId(), 0L);
-            List<WrapperPlayServerMapData> packets = new ArrayList<>(MakiScreen.screens.size());
-
-            for (ScreenPart screenPart : MakiScreen.screens) {
-                if (lastPartSendTimes[screenPart.partId] > lastTime) {
-                    WrapperPlayServerMapData wrapperPlayServerMapData = new WrapperPlayServerMapData();
-                    wrapperPlayServerMapData.copy(cachedParts[screenPart.partId]);
-                    packets.add(wrapperPlayServerMapData);
+        while (MakiScreen.getInstance().isEnabled() && !this.isCancelled()) {
+            try {
+                byte[][] buffers;
+                synchronized (frameBuffers) {
+                    buffers = frameBuffers.poll();
+                    if (buffers == null) {
+                        frameBuffers.wait(1000);
+                        continue;
+                    }
                 }
+
+                if (lastPartSendTimes.length != buffers.length) {
+                    lastPartSendTimes = new long[buffers.length];
+                    cachedParts = new WrapperPlayServerMapData[buffers.length];
+                }
+
+                long time = System.currentTimeMillis();
+                for (ScreenPart screenPart : MakiScreen.screens) {
+                    byte[] buffer = buffers[screenPart.partId];
+                    if (buffer != null && buffer.length > 0) {
+                        lastPartSendTimes[screenPart.partId] = time;
+                        WrapperPlayServerMapData packet = getPacket(screenPart.mapId, buffer);
+                        cachedParts[screenPart.partId] = packet;
+        //                if (!screenPart.modified) {
+        //                    packets.add(0, packet);
+        //                } else {
+        //                    packets.add(packet);
+        //                }
+                        screenPart.modified = true;
+                        screenPart.lastFrameBuffer = buffer;
+                    } else {
+                        screenPart.modified = false;
+                    }
+                }
+
+
+                for (Player onlinePlayer : MultiLib.getLocalOnlinePlayers()) {
+                    boolean shouldSend = MakiScreen.getInstance().getPlayerConnectionManager().shouldSendMapPlayer(onlinePlayer);
+                    if (!shouldSend) {
+                        continue;
+                    }
+
+                    long lastTime = lastSendTimes.getOrDefault(onlinePlayer.getUniqueId(), 0L);
+                    List<WrapperPlayServerMapData> packets = new ArrayList<>(MakiScreen.screens.size());
+
+                    for (ScreenPart screenPart : MakiScreen.screens) {
+                        if (lastPartSendTimes[screenPart.partId] > lastTime) {
+                            WrapperPlayServerMapData wrapperPlayServerMapData = new WrapperPlayServerMapData();
+                            wrapperPlayServerMapData.copy(cachedParts[screenPart.partId]);
+                            packets.add(wrapperPlayServerMapData);
+                        }
+                    }
+
+                    lastSendTimes.put(onlinePlayer.getUniqueId(), time);
+
+                    sendToPlayer(onlinePlayer, packets);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-
-            lastSendTimes.put(onlinePlayer.getUniqueId(), time);
-
-            sendToPlayer(onlinePlayer, packets);
         }
     }
 

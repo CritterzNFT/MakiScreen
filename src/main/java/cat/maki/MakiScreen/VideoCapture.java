@@ -1,5 +1,7 @@
 package cat.maki.MakiScreen;
 
+import com.google.common.collect.EvictingQueue;
+
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
@@ -7,6 +9,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.util.Queue;
 import java.util.logging.Logger;
 
 import static org.bukkit.Bukkit.getLogger;
@@ -104,7 +107,7 @@ public class VideoCapture extends Thread {
     public int width;
     public int height;
     MakiScreen plugin;
-    public static BufferedImage currentFrame;
+    public static final Queue<BufferedImage> frameQueue = EvictingQueue.create(1);;
 
     VideoCaptureUDPServer videoCaptureUDPServer;
 
@@ -117,7 +120,10 @@ public class VideoCapture extends Thread {
         videoCaptureUDPServer = new VideoCaptureUDPServer() {
             @Override
             public void onFrame(BufferedImage frame) {
-                currentFrame = frame;
+                synchronized (frameQueue) {
+                    frameQueue.add(frame);
+                    frameQueue.notify();
+                }
             }
         };
         videoCaptureUDPServer.start();

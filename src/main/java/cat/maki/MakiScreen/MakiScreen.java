@@ -164,10 +164,10 @@ public final class MakiScreen extends JavaPlugin implements Listener {
         videoCapture.start();
 
         FrameProcessorTask frameProcessorTask = new FrameProcessorTask(mapSize, mapWidth);
-        frameProcessorTask.runTaskTimerAsynchronously(this, 0, 1);
+        frameProcessorTask.runTaskAsynchronously(this);
         FramePacketSender framePacketSender =
                 new FramePacketSender(this, frameProcessorTask.getFrameBuffers());
-        framePacketSender.runTaskTimerAsynchronously(this, 0, 1);
+        framePacketSender.runTaskAsynchronously(this);
     }
 
     public static MakiScreen getInstance() {

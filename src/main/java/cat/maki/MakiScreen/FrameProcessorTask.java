@@ -8,16 +8,13 @@ import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
 import java.nio.ByteBuffer;
 import java.util.Queue;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static cat.maki.MakiScreen.dither.DitherLookupUtil.COLOR_MAP;
 import static cat.maki.MakiScreen.dither.DitherLookupUtil.FULL_COLOR_MAP;
 
 class FrameProcessorTask extends BukkitRunnable {
 
-    private final Object lock = new Object();
-    private final AtomicInteger threadsInLock = new AtomicInteger(0);
-    private final Queue<byte[][]> frameBuffers = EvictingQueue.create(450);
+    private final Queue<byte[][]> frameBuffers = EvictingQueue.create(1);
     private final int mapSize;
 
     private final byte[] ditheredFrameData;
@@ -38,9 +35,6 @@ class FrameProcessorTask extends BukkitRunnable {
         return frameBuffers;
     }
 
-    private int[] r;
-    private int[] g;
-    private int[] b;
     private void dontDitherFrame() {
         //   |  Y
         // X | -> -> -> ->
@@ -61,9 +55,9 @@ class FrameProcessorTask extends BukkitRunnable {
                 int green = (int) frameData[pos + 1] & 0xFF;
                 int red = (int) frameData[pos + 2] & 0xFF;
 
-                red = (int) Math.max(Math.min(255, red + ditherBuffer[pos]), 0);
-                green = (int) Math.max(Math.min(255, green + ditherBuffer[pos + 1]), 0);
-                blue = (int) Math.max(Math.min(255, blue + ditherBuffer[pos + 2]), 0);
+                red = Math.max(Math.min(255, red + ditherBuffer[pos]), 0);
+                green = Math.max(Math.min(255, green + ditherBuffer[pos + 1]), 0);
+                blue = Math.max(Math.min(255, blue + ditherBuffer[pos + 2]), 0);
 
                 rgb |= blue;
                 rgb |= green << 8;
@@ -218,30 +212,35 @@ class FrameProcessorTask extends BukkitRunnable {
 
     @Override
     public void run() {
-        try {
-            if (threadsInLock.getAndIncrement() < 3) {
-                synchronized (lock) {
-                    BufferedImage frame = VideoCapture.currentFrame;
+        while (MakiScreen.getInstance().isEnabled() && !this.isCancelled()) {
+            try {
+                BufferedImage frame;
+                synchronized (VideoCapture.frameQueue) {
+                    frame = VideoCapture.frameQueue.poll();
                     if (frame == null) {
-                        return;
+                        VideoCapture.frameQueue.wait(1000);
+                        continue;
                     }
-                    frameData = ((DataBufferByte) frame.getRaster().getDataBuffer()).getData();
-                    dontDitherFrame();
-//      System.out.println("DitherTime: " + diff + "ns");
-
-                    byte[][] buffers = new byte[mapSize][];
-
-                    for (int partId = 0; partId < buffers.length; partId++) {
-                        buffers[partId] = getMapData(partId, frameWidth);
-                    }
-
-                    frameBuffers.offer(buffers);
-
-                    notifyNewFrameBuffer(buffers);
                 }
+
+                frameData = ((DataBufferByte) frame.getRaster().getDataBuffer()).getData();
+                dontDitherFrame();
+
+                byte[][] buffers = new byte[mapSize][];
+
+                for (int partId = 0; partId < buffers.length; partId++) {
+                    buffers[partId] = getMapData(partId, frameWidth);
+                }
+
+                synchronized (frameBuffers) {
+                    frameBuffers.offer(buffers);
+                    frameBuffers.notify();
+                }
+
+                notifyNewFrameBuffer(buffers);
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-        } finally {
-            threadsInLock.decrementAndGet();
         }
     }
 
