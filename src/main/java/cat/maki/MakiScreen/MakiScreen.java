@@ -9,6 +9,7 @@ import org.bukkit.Material;
 import org.bukkit.block.BlockFace;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.GlowItemFrame;
 import org.bukkit.entity.ItemFrame;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
@@ -109,7 +110,7 @@ public final class MakiScreen extends JavaPlugin implements Listener {
                     BlockFace facing = player.getTargetBlockFace(10).getOppositeFace();
                     location = location.add(facing.getOppositeFace().getModX(), facing.getOppositeFace().getModY(), facing.getOppositeFace().getModZ());
                     location = location.add(-x * facing.getModZ(), -y, x * facing.getModX());
-                    ItemFrame itemFrame = player.getWorld().spawn(location, ItemFrame.class);
+                    ItemFrame itemFrame = player.getWorld().spawn(location, GlowItemFrame.class);
                     itemFrame.setVisible(false);
                     itemFrame.setFacingDirection(facing.getOppositeFace());
                     itemFrame.setItem(itemStack);
