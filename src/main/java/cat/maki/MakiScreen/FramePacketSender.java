@@ -15,12 +15,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 import java.awt.image.BufferedImage;
 import java.net.http.WebSocket.Listener;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
-import java.util.UUID;
+import java.util.*;
 
 class FramePacketSender extends BukkitRunnable implements Listener, org.bukkit.event.Listener {
     private final Queue<byte[][]> frameBuffers;
@@ -81,7 +76,9 @@ class FramePacketSender extends BukkitRunnable implements Listener, org.bukkit.e
                 }
 
                 long time = System.currentTimeMillis();
-                for (ScreenPart screenPart : MakiScreen.screens) {
+
+                Set<ScreenPart> screenParts = new HashSet<>(MakiScreen.screens);
+                for (ScreenPart screenPart : screenParts) {
                     byte[] buffer = buffers[screenPart.partId];
                     if (buffer != null && buffer.length > 0) {
                         lastPartSendTimes[screenPart.partId] = time;
@@ -118,8 +115,10 @@ class FramePacketSender extends BukkitRunnable implements Listener, org.bukkit.e
                             int originalMapId = wrapperPlayServerMapData.mapId;
                             wrapperPlayServerMapData.mapId += mapBufferIndex;
                             packets.add(wrapperPlayServerMapData);
-                            int entityId = MakiScreen.getInstance().getPlayerConnectionManager().mapIdToEntityID.get(originalMapId);
-                            postPackets.add(MakiScreen.getInstance().getPlayerConnectionManager().createSetItemFrameMapPacket(entityId, wrapperPlayServerMapData.mapId)); // TODO
+                            if (MakiScreen.getInstance().getPlayerConnectionManager().mapIdToEntityID.get(originalMapId) != null) {
+                                int entityId = MakiScreen.getInstance().getPlayerConnectionManager().mapIdToEntityID.get(originalMapId);
+                                postPackets.add(MakiScreen.getInstance().getPlayerConnectionManager().createSetItemFrameMapPacket(entityId, wrapperPlayServerMapData.mapId)); // TODO
+                            }
                         }
                     }
 
