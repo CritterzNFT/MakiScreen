@@ -25,6 +25,10 @@ public class PlayerConnectionManager {
         PacketEvents.getAPI().getEventManager().registerListener(new KeepAlivePacketListener(), PacketListenerPriority.LOWEST);
         PacketEvents.getAPI().init();
 
+        builder.type(ItemTypes.FILLED_MAP);
+        builder.amount(1);
+        builder.legacyData(-1);
+
         Bukkit.getScheduler().runTaskTimer(MakiScreen.getInstance(), () -> {
             for (Player player : MultiLib.getLocalOnlinePlayers()) {
                 Bukkit.getLogger().info(player.getName() + ": ping " + playerPings.get(player.getUniqueId()) + "ms" + " - stability " + playerStability.get(player.getUniqueId()) + ".");
@@ -121,15 +125,13 @@ public class PlayerConnectionManager {
         return Math.abs(Math.abs(currentPing) - Math.abs(oldPing)) < difference;
     }
 
+    private ItemStack.Builder builder = new ItemStack.Builder();
+    private NBTCompound nbtCompound = new NBTCompound();
+
     public WrapperPlayServerEntityMetadata createSetItemFrameMapPacket(int entityId, int mapId) {
         NBTInt nbtInt = new NBTInt(mapId);
-        NBTCompound nbtCompound = new NBTCompound();
         nbtCompound.setTag("map", nbtInt);
-        ItemStack.Builder builder = new ItemStack.Builder();
-        builder.type(ItemTypes.FILLED_MAP);
-        builder.amount(1);
         builder.nbt(nbtCompound);
-        builder.legacyData(-1);
         ItemStack itemstack = builder.build();
         List<EntityData> entityDataList = new ArrayList<>();
         EntityData entityData = new EntityData(8, EntityDataTypes.ITEMSTACK, itemstack);
