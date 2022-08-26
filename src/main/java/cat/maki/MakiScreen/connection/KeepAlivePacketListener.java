@@ -22,7 +22,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class KeepAlivePacketListener implements PacketListener {
-    private Map<UUID, PacketTypeCommon> packetTypeMap = new ConcurrentHashMap<>();
     @Override
     public void onPacketSend(PacketSendEvent event) {
         if (event.getPacketType() == PacketType.Play.Server.ENTITY_METADATA) {
