@@ -14,6 +14,7 @@ import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPo
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityMetadata;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerKeepAlive;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPing;
+import org.apache.commons.lang.ObjectUtils;
 import org.bukkit.entity.Player;
 
 import java.util.Map;
@@ -29,7 +30,9 @@ public class KeepAlivePacketListener implements PacketListener {
             int entityId = wrapperPlayServerEntityMetadata.getEntityId();
             wrapperPlayServerEntityMetadata.getEntityMetadata().forEach(metadata -> {
                 if (metadata.getType().getName().contains("itemstack") && metadata.getIndex() == 8 && ((ItemStack) metadata.getValue()).getType() == ItemTypes.FILLED_MAP) {
-                    MakiScreen.getInstance().getPlayerConnectionManager().mapIdToEntityID.put(((NBTInt)(((ItemStack) metadata.getValue()).getNBT().getTagOrThrow("map"))).getAsInt(), entityId);
+                    try {
+                        MakiScreen.getInstance().getPlayerConnectionManager().mapIdToEntityID.put(((NBTInt)(((ItemStack) metadata.getValue()).getNBT().getTagOrThrow("map"))).getAsInt(), entityId);
+                    } catch (NullPointerException ignored){}
                 }
             });
         }
