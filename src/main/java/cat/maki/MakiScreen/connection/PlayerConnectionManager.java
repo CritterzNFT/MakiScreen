@@ -111,7 +111,7 @@ public class PlayerConnectionManager {
             } else {
                 sendCount.put(player.getUniqueId(), count);
             }
-            return count % (int) stability == 0 || stability <= 1;
+            return count % (int) Math.round(stability) == 0 || stability <= 1;
         } else {
             return false;
         }
