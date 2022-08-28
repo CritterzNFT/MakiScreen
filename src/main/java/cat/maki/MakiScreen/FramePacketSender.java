@@ -117,7 +117,7 @@ class FramePacketSender extends BukkitRunnable implements Listener, org.bukkit.e
                             packets.add(wrapperPlayServerMapData);
                             if (MakiScreen.getInstance().getPlayerConnectionManager().mapIdToEntityID.get(originalMapId) != null) {
                                 int entityId = MakiScreen.getInstance().getPlayerConnectionManager().mapIdToEntityID.get(originalMapId);
-                                postPackets.add(MakiScreen.getInstance().getPlayerConnectionManager().createSetItemFrameMapPacket(entityId, wrapperPlayServerMapData.mapId)); // TODO
+                                postPackets.add(MakiScreen.getInstance().getPlayerConnectionManager().createSetItemFrameMapPacket(entityId, wrapperPlayServerMapData.mapId));
                             }
                         }
                     }
