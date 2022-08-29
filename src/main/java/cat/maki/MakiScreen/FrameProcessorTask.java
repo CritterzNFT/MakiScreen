@@ -309,7 +309,7 @@ class FrameProcessorTask extends BukkitRunnable {
         return null;
     }
 
-    public static int difference = 20;
+    public static int difference = 0;
     private double[] getDifference(byte[] first, byte[] second) {
         double[] response = new double[2];
         double largestDifference = 0;
